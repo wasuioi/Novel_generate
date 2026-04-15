@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { useNovel } from "@/lib/store";
 import { Button } from "./ui/Button";
 
@@ -13,6 +14,13 @@ type Props = { open: boolean; onClose: () => void };
 
 export function SettingsDrawer({ open, onClose }: Props) {
   const { novel, update, reset } = useNovel();
+
+  // Migrate stale stored model slugs (from earlier app versions) to a current one.
+  useEffect(() => {
+    if (!(MODEL_OPTIONS as readonly string[]).includes(novel.settings.model)) {
+      update((n) => { n.settings.model = MODEL_OPTIONS[0]; });
+    }
+  }, [novel.settings.model, update]);
 
   const onReset = () => {
     const ok = window.confirm(
