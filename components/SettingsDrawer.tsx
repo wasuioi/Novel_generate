@@ -3,11 +3,10 @@ import { useNovel } from "@/lib/store";
 import { Button } from "./ui/Button";
 
 const MODEL_OPTIONS = [
-  "anthropic/claude-3.5-sonnet",
-  "anthropic/claude-3.7-sonnet",
-  "openai/gpt-4o",
-  "google/gemini-2.0-flash",
-  "meta-llama/llama-3.3-70b-instruct",
+  "anthropic/claude-sonnet-4.6",
+  "anthropic/claude-opus-4.6",
+  "openai/gpt-5.2",
+  "google/gemini-3-flash-preview",
 ] as const;
 
 type Props = { open: boolean; onClose: () => void };

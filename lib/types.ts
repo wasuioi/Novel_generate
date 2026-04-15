@@ -34,5 +34,5 @@ export const DEFAULT_NOVEL: Novel = {
   storyContext: "",
   chapters: [],
   draft: { chapterId: null, title: "", prompt: "", output: "" },
-  settings: { model: "anthropic/claude-3.5-sonnet", temperature: 0.8 },
+  settings: { model: "anthropic/claude-sonnet-4.6", temperature: 0.8 },
 };

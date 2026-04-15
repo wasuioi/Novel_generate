@@ -7,7 +7,7 @@ const base = (): Novel => ({
   storyContext: "Medieval fantasy with dragons.",
   chapters: [],
   draft: { chapterId: null, title: "Ch 1", prompt: "Introduce the hero.", output: "" },
-  settings: { model: "anthropic/claude-3.5-sonnet", temperature: 0.8 },
+  settings: { model: "anthropic/claude-sonnet-4.6", temperature: 0.8 },
 });
 
 describe("buildMessages", () => {

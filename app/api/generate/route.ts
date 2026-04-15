@@ -37,6 +37,9 @@ export async function POST(req: Request) {
     model: openrouter(model),
     temperature,
     messages,
+    onError: ({ error }) => {
+      console.error("[/api/generate] streamText error:", error);
+    },
   });
 
   return result.toTextStreamResponse();
