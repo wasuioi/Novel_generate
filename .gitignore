@@ -2,5 +2,7 @@
 node_modules/
 .next/
 next-env.d.ts
+tsconfig.tsbuildinfo
+.claude/
 .env
 .env.local
