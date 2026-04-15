@@ -200,6 +200,7 @@ Single screen, two columns.
   - Model dropdown. The preset list lives as a `const` array at the top of `SettingsDrawer.tsx` — five entries, easy to edit: `anthropic/claude-3.5-sonnet`, `anthropic/claude-3.7-sonnet`, `openai/gpt-4o`, `google/gemini-2.0-flash`, `meta-llama/llama-3.3-70b-instruct`.
   - Temperature slider (0–1.5, step 0.1, default 0.8) with current value shown.
   - A small reminder: "API key lives in `.env.local` on the server."
+  - At the very bottom, separated by a divider: a red **Start New Novel (Clear All Data)** button. Clicking it opens a confirm dialog (`"This deletes your story context, all saved chapters, and the current draft. This cannot be undone. Continue?"`). On confirm, the app removes the `novel-generate:v1` key from `localStorage` and re-initializes to the empty default. This exists so the author can start a new project without opening devtools.
 
 ### Visual style
 
