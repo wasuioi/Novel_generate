@@ -31,6 +31,13 @@ describe("useNovel", () => {
     expect(result.current.novel).toEqual(DEFAULT_NOVEL);
   });
 
+  it("falls back to an empty chapters array when stored chapters is not an array", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ chapters: null }));
+    const { result } = renderHook(() => useNovel());
+    expect(Array.isArray(result.current.novel.chapters)).toBe(true);
+    expect(result.current.novel.chapters).toEqual([]);
+  });
+
   it("reset() clears localStorage and returns to defaults", () => {
     const { result } = renderHook(() => useNovel());
     act(() => {

@@ -15,6 +15,7 @@ function load(): Novel {
     return {
       ...DEFAULT_NOVEL,
       ...parsed,
+      chapters: Array.isArray(parsed.chapters) ? parsed.chapters : DEFAULT_NOVEL.chapters,
       settings: { ...DEFAULT_NOVEL.settings, ...(parsed.settings ?? {}) },
       draft:    { ...DEFAULT_NOVEL.draft,    ...(parsed.draft    ?? {}) },
     };
