@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { DEFAULT_NOVEL, type Novel } from "./types";
 
 export const STORAGE_KEY = "novel-generate:v1";
@@ -24,7 +32,15 @@ function load(): Novel {
   }
 }
 
-export function useNovel() {
+type NovelContextValue = {
+  novel: Novel;
+  update: (mutator: (draft: Novel) => void) => void;
+  reset: () => void;
+};
+
+const NovelContext = createContext<NovelContextValue | null>(null);
+
+export function NovelProvider({ children }: { children: ReactNode }) {
   const [novel, setNovel] = useState<Novel>(DEFAULT_NOVEL);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -57,5 +73,15 @@ export function useNovel() {
     setNovel(DEFAULT_NOVEL);
   }, []);
 
-  return { novel, update, reset };
+  return (
+    <NovelContext.Provider value={{ novel, update, reset }}>
+      {children}
+    </NovelContext.Provider>
+  );
+}
+
+export function useNovel(): NovelContextValue {
+  const ctx = useContext(NovelContext);
+  if (!ctx) throw new Error("useNovel must be used within a NovelProvider");
+  return ctx;
 }
