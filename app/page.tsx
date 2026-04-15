@@ -1,3 +1,20 @@
+"use client";
+import { useState } from "react";
+import { ChapterSidebar } from "@/components/ChapterSidebar";
+import { StoryContextEditor } from "@/components/StoryContextEditor";
+import { ChapterWorkspace } from "@/components/ChapterWorkspace";
+import { SettingsDrawer } from "@/components/SettingsDrawer";
+
 export default function Page() {
-  return <main className="p-8">Novel Generate — under construction</main>;
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  return (
+    <div className="flex min-h-screen">
+      <ChapterSidebar onOpenSettings={() => setSettingsOpen(true)} />
+      <main className="flex-1 p-6 max-w-3xl space-y-8">
+        <StoryContextEditor />
+        <ChapterWorkspace />
+      </main>
+      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+    </div>
+  );
 }
