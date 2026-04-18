@@ -29,6 +29,7 @@ export function ChapterWorkspace() {
         body: JSON.stringify({
           model: settings.model,
           temperature: settings.temperature,
+          maxTokens: Math.floor(settings.targetWords * 1.5),
           messages: buildMessages(novel),
         }),
         signal: controller.signal,
