@@ -1,5 +1,6 @@
 "use client";
 import { useNovel } from "@/lib/store";
+import { useReview } from "@/lib/review";
 import { Button } from "./ui/Button";
 
 type Props = { onOpenSettings: () => void };
@@ -10,6 +11,7 @@ function preview(text: string) {
 
 export function ChapterSidebar({ onOpenSettings }: Props) {
   const { novel, update } = useNovel();
+  const { reviewing } = useReview();
   const { chapters, draft } = novel;
 
   const loadChapter = (id: string) => {
@@ -30,7 +32,7 @@ export function ChapterSidebar({ onOpenSettings }: Props) {
   const showDraftRow = draft.chapterId === null && (draft.title || draft.output);
 
   return (
-    <aside className="w-56 shrink-0 h-screen sticky top-0 border-r border-zinc-800 flex flex-col">
+    <aside className={`w-56 shrink-0 h-screen sticky top-0 border-r border-zinc-800 flex flex-col ${reviewing ? "pointer-events-none opacity-50" : ""}`}>
       <div className="p-4 border-b border-zinc-800">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Chapters</h2>
       </div>

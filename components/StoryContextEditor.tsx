@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useNovel } from "@/lib/store";
+import { useReview } from "@/lib/review";
 import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
 
@@ -10,6 +11,7 @@ function wordCount(s: string) {
 
 export function StoryContextEditor() {
   const { novel, update } = useNovel();
+  const { reviewing } = useReview();
   const [adding, setAdding] = useState(false);
   const [newLore, setNewLore] = useState("");
 
@@ -38,7 +40,7 @@ export function StoryContextEditor() {
   };
 
   return (
-    <section className="space-y-2">
+    <section className={`space-y-2 ${reviewing ? "pointer-events-none opacity-50" : ""}`}>
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
           Story Context

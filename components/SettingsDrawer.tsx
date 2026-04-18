@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useNovel } from "@/lib/store";
+import { useReview } from "@/lib/review";
 import { Button } from "./ui/Button";
 
 const MODEL_OPTIONS = [
@@ -14,6 +15,7 @@ type Props = { open: boolean; onClose: () => void };
 
 export function SettingsDrawer({ open, onClose }: Props) {
   const { novel, update, reset } = useNovel();
+  const { reviewing } = useReview();
 
   // Migrate stale stored model slugs (from earlier app versions) to a current one.
   useEffect(() => {
@@ -36,7 +38,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
     <div
       className={`fixed inset-y-0 right-0 w-80 bg-zinc-900 border-l border-zinc-800 shadow-xl transform transition-transform z-20 ${
         open ? "translate-x-0" : "translate-x-full"
-      }`}
+      } ${reviewing ? "pointer-events-none opacity-50" : ""}`}
       aria-hidden={!open}
     >
       <div className="p-4 flex items-center justify-between border-b border-zinc-800">
