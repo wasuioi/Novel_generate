@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { NovelProvider } from "@/lib/store";
+import { ReviewProvider } from "@/lib/review";
 import { ChapterSidebar } from "@/components/ChapterSidebar";
 import { StoryContextEditor } from "@/components/StoryContextEditor";
 import { ChapterWorkspace } from "@/components/ChapterWorkspace";
@@ -10,14 +11,16 @@ export default function Page() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <NovelProvider>
-      <div className="flex min-h-screen">
-        <ChapterSidebar onOpenSettings={() => setSettingsOpen(true)} />
-        <main className="flex-1 p-6 max-w-3xl space-y-8">
-          <StoryContextEditor />
-          <ChapterWorkspace />
-        </main>
-        <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      </div>
+      <ReviewProvider>
+        <div className="flex min-h-screen">
+          <ChapterSidebar onOpenSettings={() => setSettingsOpen(true)} />
+          <main className="flex-1 p-6 max-w-3xl space-y-8">
+            <StoryContextEditor />
+            <ChapterWorkspace />
+          </main>
+          <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        </div>
+      </ReviewProvider>
     </NovelProvider>
   );
 }
