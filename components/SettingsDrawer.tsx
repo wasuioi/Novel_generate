@@ -71,6 +71,47 @@ export function SettingsDrawer({ open, onClose }: Props) {
           />
         </div>
 
+        <div>
+          <label className="block text-xs uppercase text-zinc-400 mb-1">Output language</label>
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="outputLanguage"
+                value="en"
+                checked={novel.settings.outputLanguage === "en"}
+                onChange={() => update((n) => { n.settings.outputLanguage = "en"; })}
+              />
+              English
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="outputLanguage"
+                value="th"
+                checked={novel.settings.outputLanguage === "th"}
+                onChange={() => update((n) => { n.settings.outputLanguage = "th"; })}
+              />
+              ไทย
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase text-zinc-400 mb-1">
+            Target chapter length · {novel.settings.targetWords} words
+          </label>
+          <input
+            type="range"
+            min={500}
+            max={3000}
+            step={100}
+            value={novel.settings.targetWords}
+            onChange={(e) => update((n) => { n.settings.targetWords = parseInt(e.target.value, 10); })}
+            className="w-full"
+          />
+        </div>
+
         <p className="text-xs text-zinc-500">
           API key lives in <code>.env.local</code> on the server.
         </p>
