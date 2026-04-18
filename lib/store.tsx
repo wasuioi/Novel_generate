@@ -20,10 +20,14 @@ function load(): Novel {
   if (!raw) return DEFAULT_NOVEL;
   try {
     const parsed = JSON.parse(raw) as Partial<Novel>;
+    const chapters = Array.isArray(parsed.chapters)
+      ? parsed.chapters.map((c) => ({ summary: "", ...c }))
+      : DEFAULT_NOVEL.chapters;
     return {
       ...DEFAULT_NOVEL,
       ...parsed,
-      chapters: Array.isArray(parsed.chapters) ? parsed.chapters : DEFAULT_NOVEL.chapters,
+      chapters,
+      lore: Array.isArray(parsed.lore) ? parsed.lore : DEFAULT_NOVEL.lore,
       settings: { ...DEFAULT_NOVEL.settings, ...(parsed.settings ?? {}) },
       draft:    { ...DEFAULT_NOVEL.draft,    ...(parsed.draft    ?? {}) },
     };
