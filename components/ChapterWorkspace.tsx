@@ -14,6 +14,7 @@ import { ReviewPanel } from "./ReviewPanel";
 type Props = {
   viewingId: string | null;
   onClearView: () => void;
+  draftActive: boolean;
   onEndDraft: () => void;
 };
 
@@ -32,7 +33,7 @@ async function callAgent(
   return res.text();
 }
 
-export function ChapterWorkspace({ viewingId, onClearView, onEndDraft }: Props) {
+export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDraft }: Props) {
   const { novel, update } = useNovel();
   const { state: reviewState, setState: setReview, reviewing } = useReview();
   const { draft, settings } = novel;
@@ -43,6 +44,10 @@ export function ChapterWorkspace({ viewingId, onClearView, onEndDraft }: Props) 
 
   const viewedChapter = viewingId ? novel.chapters.find((c) => c.id === viewingId) : undefined;
   const isEditingExisting = Boolean(draft.chapterId);
+  const hasSomethingToDiscard =
+    isEditingExisting ||
+    draftActive ||
+    Boolean(draft.title.trim() || draft.prompt.trim() || draft.output.trim());
 
   const canGenerate =
     !streaming && !reviewing && Boolean(novel.storyContext.trim() || draft.prompt.trim());
@@ -407,7 +412,12 @@ export function ChapterWorkspace({ viewingId, onClearView, onEndDraft }: Props) 
           <Button onClick={send} disabled={!draft.output.trim() || streaming || reviewing}>
             Send to Chapter History
           </Button>
-          <Button variant="secondary" onClick={discard} disabled={streaming || reviewing}>
+          <Button
+            variant="secondary"
+            onClick={discard}
+            disabled={streaming || reviewing || !hasSomethingToDiscard}
+            title={hasSomethingToDiscard ? "" : "Nothing to discard"}
+          >
             Discard
           </Button>
         </div>

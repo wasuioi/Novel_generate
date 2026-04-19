@@ -27,6 +27,7 @@ export default function Page() {
             <ChapterWorkspace
               viewingId={viewingId}
               onClearView={() => setViewingId(null)}
+              draftActive={draftActive}
               onEndDraft={() => setDraftActive(false)}
             />
           </main>
