@@ -9,14 +9,22 @@ import { SettingsDrawer } from "@/components/SettingsDrawer";
 
 export default function Page() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   return (
     <NovelProvider>
       <ReviewProvider>
         <div className="flex min-h-screen">
-          <ChapterSidebar onOpenSettings={() => setSettingsOpen(true)} />
+          <ChapterSidebar
+            viewingId={viewingId}
+            onView={setViewingId}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
           <main className="flex-1 p-6 max-w-3xl space-y-8">
             <StoryContextEditor />
-            <ChapterWorkspace />
+            <ChapterWorkspace
+              viewingId={viewingId}
+              onClearView={() => setViewingId(null)}
+            />
           </main>
           <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </div>

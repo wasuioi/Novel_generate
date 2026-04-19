@@ -22,17 +22,19 @@ describe("buildMessages", () => {
     expect(msgs[1].content).toContain("Introduce the hero.");
   });
 
-  it("injects the target word count into the user message", () => {
+  it("injects the target word count and a 'do NOT stop short' instruction", () => {
     const novel = base();
     novel.settings.targetWords = 1200;
     const msgs = buildMessages(novel);
     expect(msgs[1].content).toContain("approximately 1200 words");
+    expect(msgs[1].content).toContain("at least 960 words"); // floor(1200 * 0.8)
+    expect(msgs[1].content).toContain("do NOT stop short");
     expect(msgs[1].content).toContain("beginning, middle, and end");
   });
 
-  it("omits the Thai block when outputLanguage is en", () => {
+  it("includes the English directive when outputLanguage is en (and no Thai)", () => {
     const msgs = buildMessages(base());
-    expect(msgs[0].content).not.toContain("Thai");
+    expect(msgs[0].content).toContain("write the story entirely in English");
     expect(msgs[0].content).not.toContain("ภาษาบรรยาย");
   });
 
@@ -42,6 +44,7 @@ describe("buildMessages", () => {
     const msgs = buildMessages(novel);
     expect(msgs[0].content).toContain("write the story entirely in Thai language");
     expect(msgs[0].content).toContain("ภาษาบรรยายแบบนิยาย");
+    expect(msgs[0].content).not.toContain("write the story entirely in English");
   });
 
   it("includes established lore when present", () => {

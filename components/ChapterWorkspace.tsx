@@ -11,6 +11,11 @@ import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
 
+type Props = {
+  viewingId: string | null;
+  onClearView: () => void;
+};
+
 async function callAgent(
   url: string,
   body: unknown,
@@ -26,7 +31,7 @@ async function callAgent(
   return res.text();
 }
 
-export function ChapterWorkspace() {
+export function ChapterWorkspace({ viewingId, onClearView }: Props) {
   const { novel, update } = useNovel();
   const { state: reviewState, setState: setReview, reviewing } = useReview();
   const { draft, settings } = novel;
@@ -34,6 +39,9 @@ export function ChapterWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const agentAbortRef = useRef<AbortController | null>(null);
+
+  const viewedChapter = viewingId ? novel.chapters.find((c) => c.id === viewingId) : undefined;
+  const isEditingExisting = Boolean(draft.chapterId);
 
   const canGenerate =
     !streaming && !reviewing && Boolean(novel.storyContext.trim() || draft.prompt.trim());
@@ -51,7 +59,10 @@ export function ChapterWorkspace() {
         body: JSON.stringify({
           model: settings.model,
           temperature: settings.temperature,
-          maxTokens: Math.floor(settings.targetWords * 1.5),
+          maxTokens: Math.min(
+            Math.floor(settings.targetWords * (settings.outputLanguage === "th" ? 7 : 2)),
+            16000,
+          ),
           messages: buildMessages(novel),
         }),
         signal: controller.signal,
@@ -76,15 +87,18 @@ export function ChapterWorkspace() {
 
   const stop = () => abortRef.current?.abort();
 
-  const runAgents = (chapterTitle: string, chapterContent: string, existingLore: string[]) => {
+  const runAgents = (
+    chapterTitle: string,
+    chapterContent: string,
+    existingLore: string[],
+    skipLore: boolean,
+  ) => {
     const controller = new AbortController();
     agentAbortRef.current = controller;
     const timeout = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
 
     const summaryP = callAgent("/api/summarize",
       { chapterTitle, chapterContent }, controller.signal);
-    const loreP = callAgent("/api/extract-lore",
-      { chapterTitle, chapterContent, existingLore }, controller.signal);
 
     summaryP
       .then((text) => {
@@ -103,6 +117,20 @@ export function ChapterWorkspace() {
           prev.kind === "active" ? { ...prev, summaryStatus: "error" } : prev,
         );
       });
+
+    if (skipLore) {
+      // Mark lore as ready with empty list so the Approve button enables.
+      setReview((prev) =>
+        prev.kind === "active"
+          ? { ...prev, loreCandidates: [], loreStatus: "ready" }
+          : prev,
+      );
+      summaryP.finally(() => clearTimeout(timeout));
+      return;
+    }
+
+    const loreP = callAgent("/api/extract-lore",
+      { chapterTitle, chapterContent, existingLore }, controller.signal);
 
     loreP
       .then((text) => {
@@ -138,10 +166,10 @@ export function ChapterWorkspace() {
       summary: "",
       summaryStatus: "loading",
       loreCandidates: [],
-      loreStatus: "loading",
+      loreStatus: isEditingExisting ? "ready" : "loading",
     });
 
-    runAgents(title, content, novel.lore.map((l) => l.text));
+    runAgents(title, content, novel.lore.map((l) => l.text), isEditingExisting);
   };
 
   const commitChapter = (summary: string, approvedLore: LoreCandidate[]) => {
@@ -261,70 +289,135 @@ export function ChapterWorkspace() {
     });
   };
 
-  return (
-    <section className="space-y-6">
-      <div className={reviewing ? "pointer-events-none opacity-50" : ""}>
-        <div className="space-y-2">
-          <label className="text-xs uppercase text-zinc-400">Chapter title</label>
-          <input
-            value={draft.title}
-            onChange={(e) => update((n) => { n.draft.title = e.target.value; })}
-            placeholder="Chapter 1 · The arrival"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm"
-          />
+  const editViewedChapter = () => {
+    if (!viewedChapter) return;
+    if (
+      draft.chapterId === null &&
+      draft.output.trim() &&
+      !window.confirm("You have an unsaved new draft. Loading this chapter will discard it. Continue?")
+    ) {
+      return;
+    }
+    update((n) => {
+      n.draft = {
+        chapterId: viewedChapter.id,
+        title: viewedChapter.title,
+        prompt: viewedChapter.prompt,
+        output: viewedChapter.content,
+      };
+    });
+    onClearView();
+  };
+
+  const viewerSection = viewedChapter && (
+    <div className={`space-y-4 ${reviewing ? "pointer-events-none opacity-50" : ""}`}>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+          Viewing chapter (read-only)
+        </h2>
+        <button
+          onClick={onClearView}
+          className="text-xs text-zinc-400 hover:text-zinc-200 underline"
+        >
+          ← Back to draft
+        </button>
+      </div>
+      <div className="text-lg font-semibold">{viewedChapter.title || "(untitled)"}</div>
+      {viewedChapter.prompt && (
+        <div className="space-y-1">
+          <div className="text-xs uppercase text-zinc-500">Original prompt</div>
+          <div className="text-sm text-zinc-400 italic whitespace-pre-wrap">{viewedChapter.prompt}</div>
         </div>
-
-        <div className="space-y-2 mt-6">
-          <label className="text-xs uppercase text-zinc-400">Chapter prompt</label>
-          <Textarea
-            value={draft.prompt}
-            onChange={(e) => update((n) => { n.draft.prompt = e.target.value; })}
-            placeholder="What should happen in this chapter?"
-            rows={4}
-          />
-          <div>
-            {streaming ? (
-              <Button variant="danger" onClick={stop}>■ Stop generating</Button>
-            ) : (
-              <Button
-                onClick={generate}
-                disabled={!canGenerate}
-                title={canGenerate ? "" : "Write some guidance first"}
-              >
-                Generate ▸
-              </Button>
-            )}
+      )}
+      <div className="space-y-1">
+        <div className="text-xs uppercase text-zinc-500">Content</div>
+        <div className="font-serif text-base leading-relaxed whitespace-pre-wrap border border-zinc-800 rounded p-3 bg-zinc-950 max-h-[60vh] overflow-y-auto">
+          {viewedChapter.content}
+        </div>
+      </div>
+      {viewedChapter.summary && (
+        <div className="space-y-1">
+          <div className="text-xs uppercase text-zinc-500">Summary</div>
+          <div className="text-sm text-zinc-400 whitespace-pre-wrap border border-zinc-800 rounded p-3 bg-zinc-950">
+            {viewedChapter.summary}
           </div>
         </div>
+      )}
+      <div>
+        <Button onClick={editViewedChapter}>✎ Edit this chapter</Button>
+      </div>
+    </div>
+  );
 
-        {error && (
-          <div className="bg-red-900/40 border border-red-700 text-red-200 rounded p-3 text-sm mt-6">
-            {error}
-          </div>
-        )}
+  const editorSection = (
+    <div className={reviewing ? "pointer-events-none opacity-50" : ""}>
+      <div className="space-y-2">
+        <label className="text-xs uppercase text-zinc-400">Chapter title</label>
+        <input
+          value={draft.title}
+          onChange={(e) => update((n) => { n.draft.title = e.target.value; })}
+          placeholder="Chapter 1 · The arrival"
+          className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-sm"
+        />
+      </div>
 
-        <div className="space-y-2 mt-6">
-          <label className="text-xs uppercase text-zinc-400">Output (editable)</label>
-          <Textarea
-            value={draft.output}
-            onChange={(e) => update((n) => { n.draft.output = e.target.value; })}
-            rows={16}
-            className="font-serif text-base leading-relaxed"
-            placeholder="Generated chapter will stream in here…"
-          />
-          <div className="flex gap-2">
-            <Button onClick={send} disabled={!draft.output.trim() || streaming || reviewing}>
-              Send to Chapter History
+      <div className="space-y-2 mt-6">
+        <label className="text-xs uppercase text-zinc-400">Chapter prompt</label>
+        <Textarea
+          value={draft.prompt}
+          onChange={(e) => update((n) => { n.draft.prompt = e.target.value; })}
+          placeholder="What should happen in this chapter?"
+          rows={4}
+        />
+        <div>
+          {streaming ? (
+            <Button variant="danger" onClick={stop}>■ Stop generating</Button>
+          ) : (
+            <Button
+              onClick={generate}
+              disabled={!canGenerate}
+              title={canGenerate ? "" : "Write some guidance first"}
+            >
+              Generate ▸
             </Button>
-            <Button variant="secondary" onClick={discard} disabled={streaming || reviewing}>
-              Discard
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-900/40 border border-red-700 text-red-200 rounded p-3 text-sm mt-6">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-2 mt-6">
+        <label className="text-xs uppercase text-zinc-400">Output (editable)</label>
+        <Textarea
+          value={draft.output}
+          onChange={(e) => update((n) => { n.draft.output = e.target.value; })}
+          rows={16}
+          className="font-serif text-base leading-relaxed"
+          placeholder="Generated chapter will stream in here…"
+        />
+        <div className="flex gap-2">
+          <Button onClick={send} disabled={!draft.output.trim() || streaming || reviewing}>
+            Send to Chapter History
+          </Button>
+          <Button variant="secondary" onClick={discard} disabled={streaming || reviewing}>
+            Discard
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="space-y-6">
+      {viewedChapter ? viewerSection : editorSection}
+
       {reviewing && (
         <ReviewPanel
+          isEditing={isEditingExisting}
           onApprove={onApprove}
           onSkip={onSkip}
           onCancel={onCancel}

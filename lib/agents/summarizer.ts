@@ -5,6 +5,7 @@ const SYSTEM = [
   "recap covering: key events, who did what, what changed in the world or characters.",
   "No flourishes, no analysis — facts only. Output plain text, one bullet per line",
   "starting with \"- \". Do not include introductory phrases like \"Here is the summary\".",
+  "Summarize using the same language as the chapter text.",
 ].join(" ");
 
 export function buildSummarizerMessages(chapterTitle: string, chapterContent: string): Message[] {

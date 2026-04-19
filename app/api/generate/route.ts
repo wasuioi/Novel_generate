@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 const Body = z.object({
   model: z.string().min(1),
   temperature: z.number().min(0).max(2),
-  maxTokens: z.number().int().positive().max(8000),
+  maxTokens: z.number().int().positive().max(16000),
   messages: z.array(
     z.object({
       role: z.enum(["system", "user", "assistant"]),

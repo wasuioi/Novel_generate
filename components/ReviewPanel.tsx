@@ -4,6 +4,7 @@ import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 
 type Props = {
+  isEditing: boolean;
   onApprove: () => void;
   onSkip: () => void;
   onCancel: () => void;
@@ -11,7 +12,7 @@ type Props = {
   onRetryLore: () => void;
 };
 
-export function ReviewPanel({ onApprove, onSkip, onCancel, onRetrySummary, onRetryLore }: Props) {
+export function ReviewPanel({ isEditing, onApprove, onSkip, onCancel, onRetrySummary, onRetryLore }: Props) {
   const { state, setState } = useReview();
   if (state.kind !== "active") return null;
 
@@ -34,13 +35,14 @@ export function ReviewPanel({ onApprove, onSkip, onCancel, onRetrySummary, onRet
       ),
     });
 
-  const bothDone =
-    state.summaryStatus !== "loading" && state.loreStatus !== "loading";
+  const bothDone = isEditing
+    ? state.summaryStatus !== "loading"
+    : state.summaryStatus !== "loading" && state.loreStatus !== "loading";
 
   return (
     <section className="border border-amber-700 bg-amber-950/30 rounded p-4 space-y-4">
       <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-300">
-        Review chapter before saving
+        {isEditing ? "Review updated chapter" : "Review chapter before saving"}
       </h2>
 
       <div className="space-y-2">
@@ -69,51 +71,53 @@ export function ReviewPanel({ onApprove, onSkip, onCancel, onRetrySummary, onRet
         )}
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs uppercase text-zinc-400">New lore</label>
-          {state.loreStatus === "loading" && (
-            <span className="text-xs text-zinc-500">Extracting…</span>
-          )}
-          {state.loreStatus === "error" && (
-            <button onClick={onRetryLore} className="text-xs text-amber-400 underline">
-              Retry lore
-            </button>
+      {!isEditing && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs uppercase text-zinc-400">New lore</label>
+            {state.loreStatus === "loading" && (
+              <span className="text-xs text-zinc-500">Extracting…</span>
+            )}
+            {state.loreStatus === "error" && (
+              <button onClick={onRetryLore} className="text-xs text-amber-400 underline">
+                Retry lore
+              </button>
+            )}
+          </div>
+          {state.loreStatus === "error" ? (
+            <p className="text-xs text-red-300">
+              Lore extraction failed — chapter will save without new lore.
+            </p>
+          ) : state.loreCandidates.length === 0 && state.loreStatus === "ready" ? (
+            <p className="text-xs text-zinc-500 italic">No new lore extracted.</p>
+          ) : (
+            <ul className="space-y-1">
+              {state.loreCandidates.map((c, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={c.checked}
+                    onChange={() => toggleLore(i)}
+                    className="mt-1.5"
+                  />
+                  <input
+                    value={c.text}
+                    onChange={(e) => editLore(i, e.target.value)}
+                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-1.5 text-sm"
+                  />
+                </li>
+              ))}
+            </ul>
           )}
         </div>
-        {state.loreStatus === "error" ? (
-          <p className="text-xs text-red-300">
-            Lore extraction failed — chapter will save without new lore.
-          </p>
-        ) : state.loreCandidates.length === 0 && state.loreStatus === "ready" ? (
-          <p className="text-xs text-zinc-500 italic">No new lore extracted.</p>
-        ) : (
-          <ul className="space-y-1">
-            {state.loreCandidates.map((c, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  checked={c.checked}
-                  onChange={() => toggleLore(i)}
-                  className="mt-1.5"
-                />
-                <input
-                  value={c.text}
-                  onChange={(e) => editLore(i, e.target.value)}
-                  className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-1.5 text-sm"
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      )}
 
       <div className="flex gap-2 pt-2 border-t border-amber-800">
         <Button onClick={onApprove} disabled={!bothDone}>
-          Approve & save
+          {isEditing ? "Save chapter & summary" : "Approve & save"}
         </Button>
         <Button variant="secondary" onClick={onSkip} disabled={!bothDone}>
-          Skip review & save chapter only
+          {isEditing ? "Skip review & save chapter only" : "Skip review & save chapter only"}
         </Button>
         <button onClick={onCancel} className="text-xs text-zinc-400 underline ml-auto">
           Cancel

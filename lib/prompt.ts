@@ -8,6 +8,12 @@ const THAI_BLOCK = [
   "Ensure the dialogue sounds like real human conversation in Thai.",
 ].join("\n");
 
+const ENGLISH_BLOCK = [
+  "You MUST write the story entirely in English.",
+  "Even if the user's guidance, story context, or established lore contains other languages,",
+  "the prose must be in natural, literary English. Translate proper nouns or terms when needed for clarity.",
+].join("\n");
+
 export function buildMessages(novel: Novel): Message[] {
   const fullCount = SLIDING_WINDOW_FULL_COUNT;
   const fullChapters = fullCount > 0 ? novel.chapters.slice(-fullCount) : [];
@@ -16,9 +22,7 @@ export function buildMessages(novel: Novel): Message[] {
 
   const sections: string[] = ["You are an expert novel writer."];
 
-  if (novel.settings.outputLanguage === "th") {
-    sections.push(THAI_BLOCK);
-  }
+  sections.push(novel.settings.outputLanguage === "th" ? THAI_BLOCK : ENGLISH_BLOCK);
 
   sections.push("## Core story context and world-bible", novel.storyContext || "(empty)");
 
@@ -46,11 +50,12 @@ export function buildMessages(novel: Novel): Message[] {
   const system = sections.join("\n\n");
 
   const targetWords = novel.settings.targetWords;
+  const minWords = Math.floor(targetWords * 0.8);
   const user = [
-    `Write the next chapter. The output MUST be approximately ${targetWords} words long.`,
-    "Ensure the chapter has a proper beginning, middle, and end.",
-    "Do not pad the story unnecessarily, and ensure you finish the final sentence completely before stopping.",
-    "Keep pacing tight.",
+    `Write the next chapter. Target length: approximately ${targetWords} words.`,
+    `Develop the scene fully — do NOT stop short. Continue writing until you have covered the entire arc described in the guidance and reached at least ${minWords} words.`,
+    "Do not pad with filler, but ensure the chapter has a proper beginning, middle, and end.",
+    "Finish the final sentence completely before stopping. Keep pacing tight.",
     "",
     `Guidance: ${novel.draft.prompt}`,
   ].join("\n");

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildSummarizerMessages, parseSummarizerOutput } from "../agents/summarizer";
+import { buildLoreKeeperMessages, parseLoreKeeperOutput } from "../agents/loreKeeper";
 
 describe("buildSummarizerMessages", () => {
   it("returns a system + user message with the chapter title and content", () => {
@@ -37,8 +38,6 @@ describe("parseSummarizerOutput", () => {
     expect(parseSummarizerOutput("-   Hero arrived.   ")).toEqual(["Hero arrived."]);
   });
 });
-
-import { buildLoreKeeperMessages, parseLoreKeeperOutput } from "../agents/loreKeeper";
 
 describe("buildLoreKeeperMessages", () => {
   it("includes the chapter content and existing lore for de-duplication", () => {
