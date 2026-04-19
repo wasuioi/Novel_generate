@@ -18,7 +18,12 @@ export function ChapterSidebar({ viewingId, onView, onOpenSettings }: Props) {
   const { reviewing } = useReview();
   const { chapters, draft } = novel;
 
-  const hasUnsavedNewDraft = draft.chapterId === null && draft.output.trim() !== "";
+  const hasDraftContent = Boolean(
+    draft.chapterId ||
+      draft.title.trim() ||
+      draft.prompt.trim() ||
+      draft.output.trim(),
+  );
   const showDraftRow = Boolean(draft.title || draft.output);
 
   const newChapter = () => {
@@ -72,8 +77,8 @@ export function ChapterSidebar({ viewingId, onView, onOpenSettings }: Props) {
           variant="secondary"
           className="w-full"
           onClick={newChapter}
-          disabled={hasUnsavedNewDraft}
-          title={hasUnsavedNewDraft ? "Send or discard your current draft first" : ""}
+          disabled={hasDraftContent}
+          title={hasDraftContent ? "Send or discard your current draft first" : ""}
         >
           + New chapter
         </Button>
