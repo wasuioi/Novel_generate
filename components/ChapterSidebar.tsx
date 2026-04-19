@@ -24,7 +24,7 @@ export function ChapterSidebar({ viewingId, onView, onOpenSettings }: Props) {
       draft.prompt.trim() ||
       draft.output.trim(),
   );
-  const showDraftRow = Boolean(draft.title || draft.output);
+  const showDraftRow = draft.chapterId === null;
 
   const newChapter = () => {
     onView(null);
