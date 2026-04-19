@@ -6,6 +6,8 @@ import { Button } from "./ui/Button";
 type Props = {
   viewingId: string | null;
   onView: (id: string | null) => void;
+  draftActive: boolean;
+  onStartDraft: () => void;
   onOpenSettings: () => void;
 };
 
@@ -13,16 +15,18 @@ function preview(text: string) {
   return text.split("\n").slice(0, 2).join(" ").slice(0, 80);
 }
 
-export function ChapterSidebar({ viewingId, onView, onOpenSettings }: Props) {
+export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, onOpenSettings }: Props) {
   const { novel, update } = useNovel();
   const { reviewing } = useReview();
   const { chapters, draft } = novel;
 
-  const showDraftRow = draft.chapterId === null;
+  const showDraftRow =
+    draft.chapterId === null && (draftActive || Boolean(draft.title || draft.output));
   const newChapterDisabled = showDraftRow;
 
   const newChapter = () => {
     onView(null);
+    onStartDraft();
     update((n) => {
       n.draft = { chapterId: null, title: "", prompt: "", output: "" };
     });

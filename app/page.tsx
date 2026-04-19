@@ -10,6 +10,7 @@ import { SettingsDrawer } from "@/components/SettingsDrawer";
 export default function Page() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [draftActive, setDraftActive] = useState(false);
   return (
     <NovelProvider>
       <ReviewProvider>
@@ -17,6 +18,8 @@ export default function Page() {
           <ChapterSidebar
             viewingId={viewingId}
             onView={setViewingId}
+            draftActive={draftActive}
+            onStartDraft={() => setDraftActive(true)}
             onOpenSettings={() => setSettingsOpen(true)}
           />
           <main className="flex-1 p-6 max-w-3xl space-y-8">
@@ -24,6 +27,7 @@ export default function Page() {
             <ChapterWorkspace
               viewingId={viewingId}
               onClearView={() => setViewingId(null)}
+              onEndDraft={() => setDraftActive(false)}
             />
           </main>
           <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />

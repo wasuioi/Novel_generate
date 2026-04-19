@@ -14,6 +14,7 @@ import { ReviewPanel } from "./ReviewPanel";
 type Props = {
   viewingId: string | null;
   onClearView: () => void;
+  onEndDraft: () => void;
 };
 
 async function callAgent(
@@ -31,7 +32,7 @@ async function callAgent(
   return res.text();
 }
 
-export function ChapterWorkspace({ viewingId, onClearView }: Props) {
+export function ChapterWorkspace({ viewingId, onClearView, onEndDraft }: Props) {
   const { novel, update } = useNovel();
   const { state: reviewState, setState: setReview, reviewing } = useReview();
   const { draft, settings } = novel;
@@ -217,12 +218,14 @@ export function ChapterWorkspace({ viewingId, onClearView }: Props) {
     if (reviewState.kind !== "active") return;
     commitChapter(reviewState.summary, reviewState.loreCandidates);
     setReview({ kind: "idle" });
+    onEndDraft();
   };
 
   const onSkip = () => {
     agentAbortRef.current?.abort();
     commitChapter("", []);
     setReview({ kind: "idle" });
+    onEndDraft();
   };
 
   const onCancel = () => {
@@ -287,6 +290,7 @@ export function ChapterWorkspace({ viewingId, onClearView }: Props) {
     update((n) => {
       n.draft = { chapterId: null, title: "", prompt: "", output: "" };
     });
+    onEndDraft();
   };
 
   const editViewedChapter = () => {
