@@ -114,9 +114,10 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     const controller = new AbortController();
     agentAbortRef.current = controller;
     const timeout = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
+    const outputLanguage = settings.outputLanguage;
 
     const summaryP = callAgent("/api/summarize",
-      { chapterTitle, chapterContent }, controller.signal);
+      { chapterTitle, chapterContent, outputLanguage }, controller.signal);
 
     summaryP
       .then((text) => {
@@ -148,7 +149,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     }
 
     const loreP = callAgent("/api/extract-lore",
-      { chapterTitle, chapterContent, existingLore }, controller.signal);
+      { chapterTitle, chapterContent, existingLore, outputLanguage }, controller.signal);
 
     loreP
       .then((text) => {
@@ -255,7 +256,11 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     setReview({ ...reviewState, summaryStatus: "loading" });
     const controller = new AbortController();
     callAgent("/api/summarize",
-      { chapterTitle: reviewState.stagedTitle, chapterContent: reviewState.stagedContent },
+      {
+        chapterTitle: reviewState.stagedTitle,
+        chapterContent: reviewState.stagedContent,
+        outputLanguage: settings.outputLanguage,
+      },
       controller.signal,
     )
       .then((text) => {
@@ -283,6 +288,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         chapterTitle: reviewState.stagedTitle,
         chapterContent: reviewState.stagedContent,
         existingLore: novel.lore.map((l) => l.text),
+        outputLanguage: settings.outputLanguage,
       },
       controller.signal,
     )

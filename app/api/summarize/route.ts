@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 const Body = z.object({
   chapterTitle: z.string().min(1),
   chapterContent: z.string().min(1),
+  outputLanguage: z.enum(["en", "th"]),
 });
 
 export async function POST(req: Request) {
@@ -32,7 +33,11 @@ export async function POST(req: Request) {
     const { text } = await generateText({
       model: openrouter(SUMMARIZER_MODEL),
       temperature: 0.3,
-      messages: buildSummarizerMessages(parsed.data.chapterTitle, parsed.data.chapterContent),
+      messages: buildSummarizerMessages(
+        parsed.data.chapterTitle,
+        parsed.data.chapterContent,
+        parsed.data.outputLanguage,
+      ),
     });
     return new Response(text, {
       status: 200,

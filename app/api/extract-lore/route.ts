@@ -10,6 +10,7 @@ const Body = z.object({
   chapterTitle: z.string().min(1),
   chapterContent: z.string().min(1),
   existingLore: z.array(z.string()),
+  outputLanguage: z.enum(["en", "th"]),
 });
 
 export async function POST(req: Request) {
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
         parsed.data.chapterTitle,
         parsed.data.chapterContent,
         parsed.data.existingLore,
+        parsed.data.outputLanguage,
       ),
     });
     return new Response(text, {
