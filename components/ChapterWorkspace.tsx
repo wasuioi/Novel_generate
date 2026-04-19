@@ -53,6 +53,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     !streaming && !reviewing && Boolean(novel.storyContext.trim() || draft.prompt.trim());
 
   const generate = async () => {
+    if (!draft.prompt.trim()) {
+      const ok = window.confirm(
+        "Are you sure you want to generate without entering a chapter prompt? The AI will continue the story spontaneously.",
+      );
+      if (!ok) return;
+    }
     setError(null);
     setStreaming(true);
     update((n) => { n.draft.output = ""; });
