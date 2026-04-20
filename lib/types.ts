@@ -1,3 +1,16 @@
+export type AgentCall = {
+  agent: "writer" | "summarizer" | "loreKeeper";
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+};
+
+export type ChapterCost = {
+  calls: AgentCall[];
+  totalUsd: number;
+};
+
 export type Chapter = {
   id: string;
   title: string;
@@ -5,6 +18,7 @@ export type Chapter = {
   content: string;
   summary: string;
   createdAt: number;
+  cost?: ChapterCost;
 };
 
 export type LoreItem = {
@@ -27,6 +41,7 @@ export type Draft = {
   title: string;
   prompt: string;
   output: string;
+  writerCost?: AgentCall | null;
 };
 
 export type Novel = {

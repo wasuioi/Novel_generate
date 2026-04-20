@@ -1,6 +1,8 @@
 import { streamText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { z } from "zod";
+import { OR_META_PREFIX, OR_META_SUFFIX } from "@/lib/agents/streamMeta";
+import { buildAgentCall } from "@/lib/agents/prices";
 
 export const runtime = "nodejs";
 
@@ -44,5 +46,35 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toTextStreamResponse();
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const chunk of result.textStream) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        const usage = await result.usage;
+        const cost = buildAgentCall(
+          "writer",
+          model,
+          usage.promptTokens,
+          usage.completionTokens,
+        );
+        if (cost) {
+          controller.enqueue(
+            encoder.encode(`${OR_META_PREFIX}${JSON.stringify(cost)}${OR_META_SUFFIX}`),
+          );
+        }
+      } catch (err) {
+        console.error("[/api/generate] stream failure:", err);
+        controller.error(err);
+        return;
+      }
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }

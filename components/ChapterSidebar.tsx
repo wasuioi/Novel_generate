@@ -23,6 +23,7 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
   const showDraftRow =
     draft.chapterId === null && (draftActive || Boolean(draft.title || draft.output));
   const newChapterDisabled = showDraftRow;
+  const novelTotalUsd = chapters.reduce((sum, c) => sum + (c.cost?.totalUsd ?? 0), 0);
 
   const newChapter = () => {
     onView(null);
@@ -52,7 +53,14 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
                 highlight ? "bg-zinc-800" : ""
               }`}
             >
-              <div className="text-sm font-medium truncate">{c.title || "(untitled)"}</div>
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="text-sm font-medium truncate">{c.title || "(untitled)"}</div>
+                {c.cost && (
+                  <div className="text-[10px] font-mono text-zinc-500 shrink-0">
+                    ${c.cost.totalUsd.toFixed(4)}
+                  </div>
+                )}
+              </div>
               <div className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{preview(c.content)}</div>
             </button>
           );
@@ -72,6 +80,12 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
         )}
       </div>
       <div className="p-3 space-y-2 border-t border-zinc-800">
+        {novelTotalUsd > 0 && (
+          <div className="flex justify-between text-xs text-zinc-500 px-1">
+            <span>Total spent</span>
+            <span className="font-mono text-zinc-300">${novelTotalUsd.toFixed(4)}</span>
+          </div>
+        )}
         <Button
           variant="secondary"
           className="w-full"

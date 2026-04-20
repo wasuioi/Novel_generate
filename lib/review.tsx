@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+import type { AgentCall } from "./types";
 
 export type LoreCandidate = { text: string; checked: boolean };
 
@@ -22,6 +23,8 @@ export type ReviewState =
       summaryStatus: "loading" | "ready" | "error";
       loreCandidates: LoreCandidate[];
       loreStatus: "loading" | "ready" | "error";
+      summarizerCost: AgentCall | null;
+      loreKeeperCost: AgentCall | null;
     };
 
 type ReviewContextValue = {
