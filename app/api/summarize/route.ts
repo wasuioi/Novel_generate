@@ -7,8 +7,8 @@ import { SUMMARIZER_MODEL } from "@/lib/agents/config";
 export const runtime = "nodejs";
 
 const Body = z.object({
-  chapterTitle: z.string().min(1),
-  chapterContent: z.string().min(1),
+  chapterTitle: z.string().min(1).max(500),
+  chapterContent: z.string().min(1).max(200000),
   outputLanguage: z.enum(["en", "th"]),
 });
 

@@ -116,9 +116,11 @@ export function ReviewPanel({ isEditing, onApprove, onSkip, onCancel, onRetrySum
         <Button onClick={onApprove} disabled={!bothDone}>
           {isEditing ? "Save chapter & summary" : "Approve & save"}
         </Button>
-        <Button variant="secondary" onClick={onSkip} disabled={!bothDone}>
-          {isEditing ? "Skip review & save chapter only" : "Skip review & save chapter only"}
-        </Button>
+        {!isEditing && (
+          <Button variant="secondary" onClick={onSkip} disabled={!bothDone}>
+            Skip review & save chapter only
+          </Button>
+        )}
         <button onClick={onCancel} className="text-xs text-zinc-400 underline ml-auto">
           Cancel
         </button>

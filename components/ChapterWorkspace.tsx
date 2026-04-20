@@ -40,7 +40,8 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const agentAbortRef = useRef<AbortController | null>(null);
+  const summaryAbortRef = useRef<AbortController | null>(null);
+  const loreAbortRef = useRef<AbortController | null>(null);
 
   const viewedChapter = viewingId ? novel.chapters.find((c) => c.id === viewingId) : undefined;
   const isEditingExisting = Boolean(draft.chapterId);
@@ -105,28 +106,26 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
   const stop = () => abortRef.current?.abort();
 
-  const runAgents = (
-    chapterTitle: string,
-    chapterContent: string,
-    existingLore: string[],
-    skipLore: boolean,
-  ) => {
+  const startSummarize = (chapterTitle: string, chapterContent: string) => {
+    summaryAbortRef.current?.abort();
     const controller = new AbortController();
-    agentAbortRef.current = controller;
+    summaryAbortRef.current = controller;
     const timeout = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
-    const outputLanguage = settings.outputLanguage;
 
-    const summaryP = callAgent("/api/summarize",
-      { chapterTitle, chapterContent, outputLanguage }, controller.signal);
+    setReview((prev) =>
+      prev.kind === "active" ? { ...prev, summaryStatus: "loading" } : prev,
+    );
 
-    summaryP
+    callAgent(
+      "/api/summarize",
+      { chapterTitle, chapterContent, outputLanguage: settings.outputLanguage },
+      controller.signal,
+    )
       .then((text) => {
         const bullets = parseSummarizerOutput(text);
         const summary = bullets.length > 0 ? bullets.map((b) => `- ${b}`).join("\n") : text.trim();
         setReview((prev) =>
-          prev.kind === "active"
-            ? { ...prev, summary, summaryStatus: "ready" }
-            : prev,
+          prev.kind === "active" ? { ...prev, summary, summaryStatus: "ready" } : prev,
         );
       })
       .catch((e) => {
@@ -135,23 +134,29 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         setReview((prev) =>
           prev.kind === "active" ? { ...prev, summaryStatus: "error" } : prev,
         );
-      });
+      })
+      .finally(() => clearTimeout(timeout));
+  };
 
-    if (skipLore) {
-      // Mark lore as ready with empty list so the Approve button enables.
-      setReview((prev) =>
-        prev.kind === "active"
-          ? { ...prev, loreCandidates: [], loreStatus: "ready" }
-          : prev,
-      );
-      summaryP.finally(() => clearTimeout(timeout));
-      return;
-    }
+  const startLore = (
+    chapterTitle: string,
+    chapterContent: string,
+    existingLore: string[],
+  ) => {
+    loreAbortRef.current?.abort();
+    const controller = new AbortController();
+    loreAbortRef.current = controller;
+    const timeout = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
 
-    const loreP = callAgent("/api/extract-lore",
-      { chapterTitle, chapterContent, existingLore, outputLanguage }, controller.signal);
+    setReview((prev) =>
+      prev.kind === "active" ? { ...prev, loreStatus: "loading" } : prev,
+    );
 
-    loreP
+    callAgent(
+      "/api/extract-lore",
+      { chapterTitle, chapterContent, existingLore, outputLanguage: settings.outputLanguage },
+      controller.signal,
+    )
       .then((text) => {
         const bullets = parseLoreKeeperOutput(text);
         const candidates: LoreCandidate[] = bullets.map((b) => ({ text: b, checked: true }));
@@ -167,9 +172,13 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         setReview((prev) =>
           prev.kind === "active" ? { ...prev, loreStatus: "error" } : prev,
         );
-      });
+      })
+      .finally(() => clearTimeout(timeout));
+  };
 
-    Promise.allSettled([summaryP, loreP]).finally(() => clearTimeout(timeout));
+  const abortAgents = () => {
+    summaryAbortRef.current?.abort();
+    loreAbortRef.current?.abort();
   };
 
   const send = () => {
@@ -188,7 +197,10 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       loreStatus: isEditingExisting ? "ready" : "loading",
     });
 
-    runAgents(title, content, novel.lore.map((l) => l.text), isEditingExisting);
+    startSummarize(title, content);
+    if (!isEditingExisting) {
+      startLore(title, content, novel.lore.map((l) => l.text));
+    }
   };
 
   const commitChapter = (summary: string, approvedLore: LoreCandidate[]) => {
@@ -232,80 +244,48 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     });
   };
 
+  const confirmMissingSummary = (): boolean => {
+    if (reviewState.kind !== "active") return true;
+    if (reviewState.summaryStatus !== "error") return true;
+    return window.confirm(
+      "Summary failed to generate — the chapter will be saved without a summary. Continue?",
+    );
+  };
+
   const onApprove = () => {
     if (reviewState.kind !== "active") return;
+    if (!confirmMissingSummary()) return;
     commitChapter(reviewState.summary, reviewState.loreCandidates);
     setReview({ kind: "idle" });
     onEndDraft();
   };
 
   const onSkip = () => {
-    agentAbortRef.current?.abort();
-    commitChapter("", []);
+    if (reviewState.kind !== "active") return;
+    if (!confirmMissingSummary()) return;
+    abortAgents();
+    commitChapter(reviewState.summary, []);
     setReview({ kind: "idle" });
     onEndDraft();
   };
 
   const onCancel = () => {
-    agentAbortRef.current?.abort();
+    abortAgents();
     setReview({ kind: "idle" });
   };
 
   const onRetrySummary = () => {
     if (reviewState.kind !== "active") return;
-    setReview({ ...reviewState, summaryStatus: "loading" });
-    const controller = new AbortController();
-    callAgent("/api/summarize",
-      {
-        chapterTitle: reviewState.stagedTitle,
-        chapterContent: reviewState.stagedContent,
-        outputLanguage: settings.outputLanguage,
-      },
-      controller.signal,
-    )
-      .then((text) => {
-        const bullets = parseSummarizerOutput(text);
-        const summary = bullets.length > 0 ? bullets.map((b) => `- ${b}`).join("\n") : text.trim();
-        setReview((prev) =>
-          prev.kind === "active"
-            ? { ...prev, summary, summaryStatus: "ready" }
-            : prev,
-        );
-      })
-      .catch(() => {
-        setReview((prev) =>
-          prev.kind === "active" ? { ...prev, summaryStatus: "error" } : prev,
-        );
-      });
+    startSummarize(reviewState.stagedTitle, reviewState.stagedContent);
   };
 
   const onRetryLore = () => {
     if (reviewState.kind !== "active") return;
-    setReview({ ...reviewState, loreStatus: "loading" });
-    const controller = new AbortController();
-    callAgent("/api/extract-lore",
-      {
-        chapterTitle: reviewState.stagedTitle,
-        chapterContent: reviewState.stagedContent,
-        existingLore: novel.lore.map((l) => l.text),
-        outputLanguage: settings.outputLanguage,
-      },
-      controller.signal,
-    )
-      .then((text) => {
-        const bullets = parseLoreKeeperOutput(text);
-        const candidates: LoreCandidate[] = bullets.map((b) => ({ text: b, checked: true }));
-        setReview((prev) =>
-          prev.kind === "active"
-            ? { ...prev, loreCandidates: candidates, loreStatus: "ready" }
-            : prev,
-        );
-      })
-      .catch(() => {
-        setReview((prev) =>
-          prev.kind === "active" ? { ...prev, loreStatus: "error" } : prev,
-        );
-      });
+    startLore(
+      reviewState.stagedTitle,
+      reviewState.stagedContent,
+      novel.lore.map((l) => l.text),
+    );
   };
 
   const discard = () => {

@@ -7,9 +7,9 @@ import { LORE_KEEPER_MODEL } from "@/lib/agents/config";
 export const runtime = "nodejs";
 
 const Body = z.object({
-  chapterTitle: z.string().min(1),
-  chapterContent: z.string().min(1),
-  existingLore: z.array(z.string()),
+  chapterTitle: z.string().min(1).max(500),
+  chapterContent: z.string().min(1).max(200000),
+  existingLore: z.array(z.string().max(1000)).max(500),
   outputLanguage: z.enum(["en", "th"]),
 });
 
