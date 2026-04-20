@@ -2,6 +2,7 @@ import type { AgentCall } from "@/lib/types";
 
 const OPENROUTER_GENERATION_URL = "https://openrouter.ai/api/v1/generation";
 const FETCH_TIMEOUT_MS = 5_000;
+const RETRY_DELAYS_MS = [0, 500, 1500];
 
 type RawGeneration = {
   data?: {
@@ -15,20 +16,21 @@ type RawGeneration = {
 
 /**
  * Fetches the billed cost for a single OpenRouter generation.
- * OpenRouter's /generation endpoint sometimes isn't ready the instant a
- * generation finishes, so we retry once after a short delay before giving up.
- * Returns null on any failure so callers can simply omit cost from the chapter.
+ * The /generation endpoint lags behind the generation itself (100-1500ms),
+ * so we retry with escalating delays before giving up. Returns null on any
+ * failure so callers can simply omit cost from the chapter.
  */
 export async function fetchOpenRouterCost(
   genId: string,
   apiKey: string,
   agent: AgentCall["agent"],
 ): Promise<AgentCall | null> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+  for (const delayMs of RETRY_DELAYS_MS) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
     const call = await tryFetch(genId, apiKey, agent);
     if (call) return call;
   }
+  console.warn(`[cost] gave up on genId=${genId} agent=${agent}`);
   return null;
 }
 

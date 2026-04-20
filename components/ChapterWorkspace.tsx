@@ -264,7 +264,6 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     const writerCost = novel.draft.writerCost ?? null;
     const summarizerCost = reviewState.summarizerCost;
     const loreKeeperCost = reviewState.loreKeeperCost;
-    const chapterCost = buildChapterCost([writerCost, summarizerCost, loreKeeperCost]);
 
     update((n) => {
       const d = n.draft;
@@ -275,9 +274,19 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           existing.prompt = stagedPrompt;
           existing.content = stagedContent;
           existing.summary = summary;
-          existing.cost = chapterCost;
+          // Merge: keep old per-agent cost when the new capture failed, so a
+          // transient OpenRouter /generation lag doesn't wipe saved cost data.
+          const findOldCost = (agent: AgentCall["agent"]) =>
+            existing.cost?.calls.find((c) => c.agent === agent) ?? null;
+          const merged = buildChapterCost([
+            writerCost ?? findOldCost("writer"),
+            summarizerCost ?? findOldCost("summarizer"),
+            loreKeeperCost ?? findOldCost("loreKeeper"),
+          ]);
+          existing.cost = merged ?? existing.cost;
         }
       } else {
+        const chapterCost = buildChapterCost([writerCost, summarizerCost, loreKeeperCost]);
         const newId = crypto.randomUUID();
         n.chapters.push({
           id: newId,
