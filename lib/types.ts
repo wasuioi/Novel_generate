@@ -3,12 +3,23 @@ export type Chapter = {
   title: string;
   prompt: string;
   content: string;
+  summary: string;
+  createdAt: number;
+};
+
+export type LoreItem = {
+  id: string;
+  text: string;
+  source: "ai" | "user";
+  chapterId?: string;
   createdAt: number;
 };
 
 export type Settings = {
   model: string;
   temperature: number;
+  targetWords: number;
+  outputLanguage: "en" | "th";
 };
 
 export type Draft = {
@@ -20,6 +31,7 @@ export type Draft = {
 
 export type Novel = {
   storyContext: string;
+  lore: LoreItem[];
   chapters: Chapter[];
   draft: Draft;
   settings: Settings;
@@ -32,7 +44,13 @@ export type Message = {
 
 export const DEFAULT_NOVEL: Novel = {
   storyContext: "",
+  lore: [],
   chapters: [],
   draft: { chapterId: null, title: "", prompt: "", output: "" },
-  settings: { model: "anthropic/claude-sonnet-4.6", temperature: 0.8 },
+  settings: {
+    model: "anthropic/claude-sonnet-4.6",
+    temperature: 0.8,
+    targetWords: 1800,
+    outputLanguage: "en",
+  },
 };

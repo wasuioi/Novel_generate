@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 const Body = z.object({
   model: z.string().min(1),
   temperature: z.number().min(0).max(2),
+  maxTokens: z.number().int().positive().max(16000),
   messages: z.array(
     z.object({
       role: z.enum(["system", "user", "assistant"]),
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return new Response("Bad request body", { status: 400 });
   }
-  const { model, temperature, messages } = parsed.data;
+  const { model, temperature, maxTokens, messages } = parsed.data;
 
   const openrouter = createOpenAICompatible({
     name: "openrouter",
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openrouter(model),
     temperature,
+    maxTokens,
     messages,
     onError: ({ error }) => {
       console.error("[/api/generate] streamText error:", error);

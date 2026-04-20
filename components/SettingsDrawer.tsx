@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useNovel } from "@/lib/store";
+import { useReview } from "@/lib/review";
 import { Button } from "./ui/Button";
 
 const MODEL_OPTIONS = [
@@ -14,6 +15,7 @@ type Props = { open: boolean; onClose: () => void };
 
 export function SettingsDrawer({ open, onClose }: Props) {
   const { novel, update, reset } = useNovel();
+  const { reviewing } = useReview();
 
   // Migrate stale stored model slugs (from earlier app versions) to a current one.
   useEffect(() => {
@@ -36,7 +38,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
     <div
       className={`fixed inset-y-0 right-0 w-80 bg-zinc-900 border-l border-zinc-800 shadow-xl transform transition-transform z-20 ${
         open ? "translate-x-0" : "translate-x-full"
-      }`}
+      } ${reviewing ? "pointer-events-none opacity-50" : ""}`}
       aria-hidden={!open}
     >
       <div className="p-4 flex items-center justify-between border-b border-zinc-800">
@@ -67,6 +69,47 @@ export function SettingsDrawer({ open, onClose }: Props) {
             step={0.1}
             value={novel.settings.temperature}
             onChange={(e) => update((n) => { n.settings.temperature = parseFloat(e.target.value); })}
+            className="w-full"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase text-zinc-400 mb-1">Output language</label>
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="outputLanguage"
+                value="en"
+                checked={novel.settings.outputLanguage === "en"}
+                onChange={() => update((n) => { n.settings.outputLanguage = "en"; })}
+              />
+              English
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="outputLanguage"
+                value="th"
+                checked={novel.settings.outputLanguage === "th"}
+                onChange={() => update((n) => { n.settings.outputLanguage = "th"; })}
+              />
+              ไทย
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase text-zinc-400 mb-1">
+            Target chapter length · {novel.settings.targetWords} words
+          </label>
+          <input
+            type="range"
+            min={500}
+            max={3000}
+            step={100}
+            value={novel.settings.targetWords}
+            onChange={(e) => update((n) => { n.settings.targetWords = parseInt(e.target.value, 10); })}
             className="w-full"
           />
         </div>

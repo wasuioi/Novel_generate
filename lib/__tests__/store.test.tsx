@@ -52,4 +52,19 @@ describe("useNovel", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(result.current.novel).toEqual(DEFAULT_NOVEL);
   });
+
+  it("migrates legacy stored state by filling new fields with defaults", () => {
+    const legacy = {
+      storyContext: "Old context",
+      chapters: [{ id: "c1", title: "Old ch", prompt: "", content: "Body.", createdAt: 1 }],
+      draft: { chapterId: null, title: "", prompt: "", output: "" },
+      settings: { model: "anthropic/claude-sonnet-4.6", temperature: 0.8 },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    const { result } = renderHook(() => useNovel(), { wrapper });
+    expect(result.current.novel.lore).toEqual([]);
+    expect(result.current.novel.chapters[0].summary).toBe("");
+    expect(result.current.novel.settings.targetWords).toBe(1800);
+    expect(result.current.novel.settings.outputLanguage).toBe("en");
+  });
 });
