@@ -38,28 +38,17 @@ async function callAgent(
   return { text: json.text ?? "", cost: json.cost ?? null };
 }
 
-async function fetchWriterCost(genId: string): Promise<AgentCall | null> {
-  try {
-    const res = await fetch("/api/cost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ genId }),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { cost: AgentCall | null };
-    return json.cost ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function extractGenId(buffer: string): string | null {
+function extractWriterCost(buffer: string): AgentCall | null {
   const metaIdx = buffer.indexOf(OR_META_PREFIX);
   if (metaIdx < 0) return null;
   const tail = buffer.slice(metaIdx + OR_META_PREFIX.length);
   const sufIdx = tail.indexOf(OR_META_SUFFIX);
   if (sufIdx < 0) return null;
-  return tail.slice(0, sufIdx);
+  try {
+    return JSON.parse(tail.slice(0, sufIdx)) as AgentCall;
+  } catch {
+    return null;
+  }
 }
 
 function buildChapterCost(calls: (AgentCall | null | undefined)[]): ChapterCost | undefined {
@@ -137,12 +126,9 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         },
         controller.signal,
       );
-      const genId = extractGenId(received);
-      if (genId) {
-        const writerCost = await fetchWriterCost(genId);
-        if (writerCost) {
-          update((n) => { n.draft.writerCost = writerCost; });
-        }
+      const writerCost = extractWriterCost(received);
+      if (writerCost) {
+        update((n) => { n.draft.writerCost = writerCost; });
       }
     } catch (e) {
       if ((e as Error).name === "AbortError") return;

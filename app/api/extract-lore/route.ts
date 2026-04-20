@@ -3,7 +3,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { z } from "zod";
 import { buildLoreKeeperMessages } from "@/lib/agents/loreKeeper";
 import { LORE_KEEPER_MODEL } from "@/lib/agents/config";
-import { fetchOpenRouterCost } from "@/lib/agents/cost";
+import { buildAgentCall } from "@/lib/agents/prices";
 
 export const runtime = "nodejs";
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const { text, response } = await generateText({
+    const { text, usage } = await generateText({
       model: openrouter(LORE_KEEPER_MODEL),
       temperature: 0.2,
       messages: buildLoreKeeperMessages(
@@ -42,10 +42,12 @@ export async function POST(req: Request) {
         parsed.data.outputLanguage,
       ),
     });
-    console.log("[/api/extract-lore] response.id =", response.id);
-    const cost = response.id
-      ? await fetchOpenRouterCost(response.id, apiKey, "loreKeeper")
-      : null;
+    const cost = buildAgentCall(
+      "loreKeeper",
+      LORE_KEEPER_MODEL,
+      usage.promptTokens,
+      usage.completionTokens,
+    );
     return Response.json({ text, cost });
   } catch (err) {
     console.error("[/api/extract-lore] error:", err);

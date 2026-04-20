@@ -3,7 +3,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { z } from "zod";
 import { buildSummarizerMessages } from "@/lib/agents/summarizer";
 import { SUMMARIZER_MODEL } from "@/lib/agents/config";
-import { fetchOpenRouterCost } from "@/lib/agents/cost";
+import { buildAgentCall } from "@/lib/agents/prices";
 
 export const runtime = "nodejs";
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const { text, response } = await generateText({
+    const { text, usage } = await generateText({
       model: openrouter(SUMMARIZER_MODEL),
       temperature: 0.3,
       messages: buildSummarizerMessages(
@@ -40,10 +40,12 @@ export async function POST(req: Request) {
         parsed.data.outputLanguage,
       ),
     });
-    console.log("[/api/summarize] response.id =", response.id);
-    const cost = response.id
-      ? await fetchOpenRouterCost(response.id, apiKey, "summarizer")
-      : null;
+    const cost = buildAgentCall(
+      "summarizer",
+      SUMMARIZER_MODEL,
+      usage.promptTokens,
+      usage.completionTokens,
+    );
     return Response.json({ text, cost });
   } catch (err) {
     console.error("[/api/summarize] error:", err);

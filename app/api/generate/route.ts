@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { z } from "zod";
 import { OR_META_PREFIX, OR_META_SUFFIX } from "@/lib/agents/streamMeta";
+import { buildAgentCall } from "@/lib/agents/prices";
 
 export const runtime = "nodejs";
 
@@ -52,14 +53,17 @@ export async function POST(req: Request) {
         for await (const chunk of result.textStream) {
           controller.enqueue(encoder.encode(chunk));
         }
-        const response = await result.response;
-        console.log("[/api/generate] response.id =", response?.id);
-        if (response?.id) {
+        const usage = await result.usage;
+        const cost = buildAgentCall(
+          "writer",
+          model,
+          usage.promptTokens,
+          usage.completionTokens,
+        );
+        if (cost) {
           controller.enqueue(
-            encoder.encode(`${OR_META_PREFIX}${response.id}${OR_META_SUFFIX}`),
+            encoder.encode(`${OR_META_PREFIX}${JSON.stringify(cost)}${OR_META_SUFFIX}`),
           );
-        } else {
-          console.warn("[/api/generate] no response.id — writer cost cannot be fetched");
         }
       } catch (err) {
         console.error("[/api/generate] stream failure:", err);
