@@ -3,6 +3,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { z } from "zod";
 import { buildLoreKeeperMessages } from "@/lib/agents/loreKeeper";
 import { LORE_KEEPER_MODEL } from "@/lib/agents/config";
+import { fetchOpenRouterCost } from "@/lib/agents/cost";
 
 export const runtime = "nodejs";
 
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const { text } = await generateText({
+    const { text, response } = await generateText({
       model: openrouter(LORE_KEEPER_MODEL),
       temperature: 0.2,
       messages: buildLoreKeeperMessages(
@@ -41,10 +42,10 @@ export async function POST(req: Request) {
         parsed.data.outputLanguage,
       ),
     });
-    return new Response(text, {
-      status: 200,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    const cost = response.id
+      ? await fetchOpenRouterCost(response.id, apiKey, "loreKeeper")
+      : null;
+    return Response.json({ text, cost });
   } catch (err) {
     console.error("[/api/extract-lore] error:", err);
     return new Response("Lore extraction failed", { status: 502 });
