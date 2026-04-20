@@ -1,4 +1,4 @@
-import type { AgentCall } from "@/lib/types";
+import type { AgentCall, ChapterCost } from "@/lib/types";
 
 // USD per 1M tokens, as listed on OpenRouter. Update when pricing changes.
 export const MODEL_PRICES: Record<string, { input: number; output: number }> = {
@@ -16,7 +16,10 @@ export function computeCostUsd(
   completionTokens: number,
 ): number | null {
   const p = MODEL_PRICES[model];
-  if (!p) return null;
+  if (!p) {
+    console.warn(`[cost] no price entry for model "${model}" — cost will be omitted`);
+    return null;
+  }
   return (promptTokens * p.input + completionTokens * p.output) / 1_000_000;
 }
 
@@ -29,4 +32,13 @@ export function buildAgentCall(
   const costUsd = computeCostUsd(model, promptTokens, completionTokens);
   if (costUsd === null) return null;
   return { agent, model, promptTokens, completionTokens, costUsd };
+}
+
+export function buildChapterCost(
+  calls: (AgentCall | null | undefined)[],
+): ChapterCost | undefined {
+  const filtered = calls.filter((c): c is AgentCall => Boolean(c));
+  if (filtered.length === 0) return undefined;
+  const totalUsd = filtered.reduce((sum, c) => sum + c.costUsd, 0);
+  return { calls: filtered, totalUsd };
 }

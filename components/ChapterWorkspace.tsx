@@ -7,8 +7,9 @@ import { readBufferedStream } from "@/lib/stream";
 import { parseSummarizerOutput } from "@/lib/agents/summarizer";
 import { parseLoreKeeperOutput } from "@/lib/agents/loreKeeper";
 import { AGENT_TIMEOUT_MS } from "@/lib/agents/config";
-import { OR_META_PREFIX, OR_META_SUFFIX } from "@/lib/agents/streamMeta";
-import type { AgentCall, ChapterCost } from "@/lib/types";
+import { OR_META_PREFIX, extractWriterCost } from "@/lib/agents/streamMeta";
+import { buildChapterCost } from "@/lib/agents/prices";
+import type { AgentCall } from "@/lib/types";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
@@ -36,26 +37,6 @@ async function callAgent(
   if (!res.ok) throw new Error(`${url} returned ${res.status}`);
   const json = (await res.json()) as AgentResponse;
   return { text: json.text ?? "", cost: json.cost ?? null };
-}
-
-function extractWriterCost(buffer: string): AgentCall | null {
-  const metaIdx = buffer.indexOf(OR_META_PREFIX);
-  if (metaIdx < 0) return null;
-  const tail = buffer.slice(metaIdx + OR_META_PREFIX.length);
-  const sufIdx = tail.indexOf(OR_META_SUFFIX);
-  if (sufIdx < 0) return null;
-  try {
-    return JSON.parse(tail.slice(0, sufIdx)) as AgentCall;
-  } catch {
-    return null;
-  }
-}
-
-function buildChapterCost(calls: (AgentCall | null | undefined)[]): ChapterCost | undefined {
-  const filtered = calls.filter((c): c is AgentCall => Boolean(c));
-  if (filtered.length === 0) return undefined;
-  const totalUsd = filtered.reduce((sum, c) => sum + c.costUsd, 0);
-  return { calls: filtered, totalUsd };
 }
 
 export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDraft }: Props) {
