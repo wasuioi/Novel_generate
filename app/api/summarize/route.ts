@@ -40,6 +40,7 @@ export async function POST(req: Request) {
         parsed.data.outputLanguage,
       ),
     });
+    console.log("[/api/summarize] response.id =", response.id);
     const cost = response.id
       ? await fetchOpenRouterCost(response.id, apiKey, "summarizer")
       : null;

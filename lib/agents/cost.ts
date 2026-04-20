@@ -47,10 +47,16 @@ async function tryFetch(
       headers: { Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[cost] ${agent} genId=${genId} HTTP ${res.status}: ${await res.text().catch(() => "")}`);
+      return null;
+    }
     const json = (await res.json()) as RawGeneration;
     const d = json.data;
-    if (!d || typeof d.total_cost !== "number") return null;
+    if (!d || typeof d.total_cost !== "number") {
+      console.warn(`[cost] ${agent} genId=${genId} payload missing data.total_cost:`, JSON.stringify(json).slice(0, 300));
+      return null;
+    }
     return {
       agent,
       model: d.model,
@@ -58,7 +64,8 @@ async function tryFetch(
       completionTokens: d.tokens_completion ?? 0,
       costUsd: d.total_cost,
     };
-  } catch {
+  } catch (err) {
+    console.warn(`[cost] ${agent} genId=${genId} fetch error:`, (err as Error).message);
     return null;
   } finally {
     clearTimeout(timeout);

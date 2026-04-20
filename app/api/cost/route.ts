@@ -18,6 +18,8 @@ export async function POST(req: Request) {
     return new Response("Bad request body", { status: 400 });
   }
 
+  console.log("[/api/cost] received genId =", parsed.data.genId);
   const cost = await fetchOpenRouterCost(parsed.data.genId, apiKey, "writer");
+  console.log("[/api/cost] result =", cost);
   return Response.json({ cost });
 }

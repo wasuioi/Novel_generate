@@ -53,10 +53,13 @@ export async function POST(req: Request) {
           controller.enqueue(encoder.encode(chunk));
         }
         const response = await result.response;
+        console.log("[/api/generate] response.id =", response?.id);
         if (response?.id) {
           controller.enqueue(
             encoder.encode(`${OR_META_PREFIX}${response.id}${OR_META_SUFFIX}`),
           );
+        } else {
+          console.warn("[/api/generate] no response.id — writer cost cannot be fetched");
         }
       } catch (err) {
         console.error("[/api/generate] stream failure:", err);
