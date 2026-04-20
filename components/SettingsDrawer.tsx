@@ -6,9 +6,10 @@ import { Button } from "./ui/Button";
 
 const MODEL_OPTIONS = [
   "anthropic/claude-sonnet-4.6",
-  "anthropic/claude-opus-4.6",
-  "openai/gpt-5.2",
+  "anthropic/claude-opus-4.7",
+  "openai/gpt-5.4",
   "google/gemini-3-flash-preview",
+  "google/gemini-3.1-pro-preview",
 ] as const;
 
 type Props = { open: boolean; onClose: () => void };
