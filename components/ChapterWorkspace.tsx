@@ -7,6 +7,8 @@ import { readBufferedStream } from "@/lib/stream";
 import { parseSummarizerOutput } from "@/lib/agents/summarizer";
 import { parseLoreKeeperOutput } from "@/lib/agents/loreKeeper";
 import { AGENT_TIMEOUT_MS } from "@/lib/agents/config";
+import { OR_META_PREFIX, OR_META_SUFFIX } from "@/lib/agents/streamMeta";
+import type { AgentCall, ChapterCost } from "@/lib/types";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
@@ -18,11 +20,13 @@ type Props = {
   onEndDraft: () => void;
 };
 
+type AgentResponse = { text: string; cost: AgentCall | null };
+
 async function callAgent(
   url: string,
   body: unknown,
   signal: AbortSignal,
-): Promise<string> {
+): Promise<AgentResponse> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,7 +34,39 @@ async function callAgent(
     signal,
   });
   if (!res.ok) throw new Error(`${url} returned ${res.status}`);
-  return res.text();
+  const json = (await res.json()) as AgentResponse;
+  return { text: json.text ?? "", cost: json.cost ?? null };
+}
+
+async function fetchWriterCost(genId: string): Promise<AgentCall | null> {
+  try {
+    const res = await fetch("/api/cost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ genId }),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { cost: AgentCall | null };
+    return json.cost ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function extractGenId(buffer: string): string | null {
+  const metaIdx = buffer.indexOf(OR_META_PREFIX);
+  if (metaIdx < 0) return null;
+  const tail = buffer.slice(metaIdx + OR_META_PREFIX.length);
+  const sufIdx = tail.indexOf(OR_META_SUFFIX);
+  if (sufIdx < 0) return null;
+  return tail.slice(0, sufIdx);
+}
+
+function buildChapterCost(calls: (AgentCall | null | undefined)[]): ChapterCost | undefined {
+  const filtered = calls.filter((c): c is AgentCall => Boolean(c));
+  if (filtered.length === 0) return undefined;
+  const totalUsd = filtered.reduce((sum, c) => sum + c.costUsd, 0);
+  return { calls: filtered, totalUsd };
 }
 
 export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDraft }: Props) {
@@ -68,9 +104,10 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     }
     setError(null);
     setStreaming(true);
-    update((n) => { n.draft.output = ""; });
+    update((n) => { n.draft.output = ""; n.draft.writerCost = null; });
     const controller = new AbortController();
     abortRef.current = controller;
+    let received = "";
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -92,9 +129,21 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       }
       await readBufferedStream(
         res.body,
-        (chunk) => update((n) => { n.draft.output += chunk; }),
+        (chunk) => {
+          received += chunk;
+          const metaIdx = received.indexOf(OR_META_PREFIX);
+          const clean = metaIdx >= 0 ? received.slice(0, metaIdx) : received;
+          update((n) => { n.draft.output = clean; });
+        },
         controller.signal,
       );
+      const genId = extractGenId(received);
+      if (genId) {
+        const writerCost = await fetchWriterCost(genId);
+        if (writerCost) {
+          update((n) => { n.draft.writerCost = writerCost; });
+        }
+      }
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
       setError((e as Error).message);
@@ -121,11 +170,13 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       { chapterTitle, chapterContent, outputLanguage: settings.outputLanguage },
       controller.signal,
     )
-      .then((text) => {
+      .then(({ text, cost }) => {
         const bullets = parseSummarizerOutput(text);
         const summary = bullets.length > 0 ? bullets.map((b) => `- ${b}`).join("\n") : text.trim();
         setReview((prev) =>
-          prev.kind === "active" ? { ...prev, summary, summaryStatus: "ready" } : prev,
+          prev.kind === "active"
+            ? { ...prev, summary, summaryStatus: "ready", summarizerCost: cost }
+            : prev,
         );
       })
       .catch((e) => {
@@ -157,12 +208,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       { chapterTitle, chapterContent, existingLore, outputLanguage: settings.outputLanguage },
       controller.signal,
     )
-      .then((text) => {
+      .then(({ text, cost }) => {
         const bullets = parseLoreKeeperOutput(text);
         const candidates: LoreCandidate[] = bullets.map((b) => ({ text: b, checked: true }));
         setReview((prev) =>
           prev.kind === "active"
-            ? { ...prev, loreCandidates: candidates, loreStatus: "ready" }
+            ? { ...prev, loreCandidates: candidates, loreStatus: "ready", loreKeeperCost: cost }
             : prev,
         );
       })
@@ -195,6 +246,8 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       summaryStatus: "loading",
       loreCandidates: [],
       loreStatus: isEditingExisting ? "ready" : "loading",
+      summarizerCost: null,
+      loreKeeperCost: null,
     });
 
     startSummarize(title, content);
@@ -208,6 +261,10 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     const stagedTitle = reviewState.stagedTitle;
     const stagedPrompt = reviewState.stagedPrompt;
     const stagedContent = reviewState.stagedContent;
+    const writerCost = novel.draft.writerCost ?? null;
+    const summarizerCost = reviewState.summarizerCost;
+    const loreKeeperCost = reviewState.loreKeeperCost;
+    const chapterCost = buildChapterCost([writerCost, summarizerCost, loreKeeperCost]);
 
     update((n) => {
       const d = n.draft;
@@ -218,6 +275,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           existing.prompt = stagedPrompt;
           existing.content = stagedContent;
           existing.summary = summary;
+          existing.cost = chapterCost;
         }
       } else {
         const newId = crypto.randomUUID();
@@ -228,6 +286,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           content: stagedContent,
           summary,
           createdAt: Date.now(),
+          cost: chapterCost,
         });
         for (const c of approvedLore) {
           if (!c.checked || !c.text.trim()) continue;
@@ -240,7 +299,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           });
         }
       }
-      n.draft = { chapterId: null, title: "", prompt: "", output: "" };
+      n.draft = { chapterId: null, title: "", prompt: "", output: "", writerCost: null };
     });
   };
 
@@ -291,7 +350,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const discard = () => {
     if (!window.confirm("Discard this draft?")) return;
     update((n) => {
-      n.draft = { chapterId: null, title: "", prompt: "", output: "" };
+      n.draft = { chapterId: null, title: "", prompt: "", output: "", writerCost: null };
     });
     onEndDraft();
   };
@@ -311,6 +370,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         title: viewedChapter.title,
         prompt: viewedChapter.prompt,
         output: viewedChapter.content,
+        writerCost: null,
       };
     });
     onClearView();
@@ -347,6 +407,27 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           <div className="text-xs uppercase text-zinc-500">Summary</div>
           <div className="text-sm text-zinc-400 whitespace-pre-wrap border border-zinc-800 rounded p-3 bg-zinc-950">
             {viewedChapter.summary}
+          </div>
+        </div>
+      )}
+      {viewedChapter.cost && (
+        <div className="space-y-1">
+          <div className="text-xs uppercase text-zinc-500">API cost</div>
+          <div className="text-xs font-mono text-zinc-400 border border-zinc-800 rounded p-3 bg-zinc-950 space-y-0.5">
+            {viewedChapter.cost.calls.map((c, i) => (
+              <div key={i} className="flex justify-between gap-4">
+                <span>
+                  {c.agent}: {c.model}
+                </span>
+                <span>
+                  in {c.promptTokens.toLocaleString()} / out {c.completionTokens.toLocaleString()} · ${c.costUsd.toFixed(4)}
+                </span>
+              </div>
+            ))}
+            <div className="flex justify-between pt-1 border-t border-zinc-800 font-semibold text-zinc-300">
+              <span>Total</span>
+              <span>${viewedChapter.cost.totalUsd.toFixed(4)}</span>
+            </div>
           </div>
         </div>
       )}
