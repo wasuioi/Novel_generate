@@ -1,18 +1,23 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNovel } from "@/lib/store";
 import { useReview, type LoreCandidate } from "@/lib/review";
 import { buildMessages } from "@/lib/prompt";
 import { readBufferedStream } from "@/lib/stream";
 import { parseSummarizerOutput } from "@/lib/agents/summarizer";
 import { parseLoreKeeperOutput } from "@/lib/agents/loreKeeper";
-import { AGENT_TIMEOUT_MS } from "@/lib/agents/config";
-import { OR_META_PREFIX, extractWriterCost } from "@/lib/agents/streamMeta";
+import {
+  AGENT_TIMEOUT_MS,
+  MAX_OUTPUT_TOKENS,
+  TOKENS_PER_WORD,
+} from "@/lib/agents/config";
+import { COST_DELIMITER_HEADER, extractWriterCost } from "@/lib/agents/streamMeta";
 import { buildChapterCost } from "@/lib/agents/prices";
 import type { AgentCall } from "@/lib/types";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
+import { PromptPreviewModal } from "./PromptPreviewModal";
 
 type Props = {
   viewingId: string | null;
@@ -44,6 +49,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const { state: reviewState, setState: setReview, reviewing } = useReview();
   const { draft, settings } = novel;
   const [streaming, setStreaming] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const summaryAbortRef = useRef<AbortController | null>(null);
@@ -51,6 +57,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
   const viewedChapter = viewingId ? novel.chapters.find((c) => c.id === viewingId) : undefined;
   const isEditingExisting = Boolean(draft.chapterId);
+  const previewMessages = useMemo(() => buildMessages(novel), [novel]);
   const hasSomethingToDiscard =
     isEditingExisting ||
     draftActive ||
@@ -86,8 +93,8 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           model: settings.model,
           temperature: settings.temperature,
           maxTokens: Math.min(
-            Math.floor(settings.targetWords * (settings.outputLanguage === "th" ? 7 : 2)),
-            16000,
+            Math.floor(settings.targetWords * TOKENS_PER_WORD[settings.outputLanguage]),
+            MAX_OUTPUT_TOKENS,
           ),
           messages: buildMessages(novel),
         }),
@@ -97,17 +104,18 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         setError(`${res.status} · ${await res.text()}`);
         return;
       }
+      const delimiter = res.headers.get(COST_DELIMITER_HEADER) ?? "";
       await readBufferedStream(
         res.body,
         (chunk) => {
           received += chunk;
-          const metaIdx = received.indexOf(OR_META_PREFIX);
+          const metaIdx = delimiter ? received.indexOf(delimiter) : -1;
           const clean = metaIdx >= 0 ? received.slice(0, metaIdx) : received;
           update((n) => { n.draft.output = clean; });
         },
         controller.signal,
       );
-      const writerCost = extractWriterCost(received);
+      const writerCost = extractWriterCost(received, delimiter);
       if (writerCost) {
         update((n) => { n.draft.writerCost = writerCost; });
       }
@@ -433,17 +441,27 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           placeholder="What should happen in this chapter?"
           rows={4}
         />
-        <div>
+        <div className="flex gap-2">
           {streaming ? (
             <Button variant="danger" onClick={stop}>■ Stop generating</Button>
           ) : (
-            <Button
-              onClick={generate}
-              disabled={!canGenerate}
-              title={canGenerate ? "" : "Write some guidance first"}
-            >
-              Generate ▸
-            </Button>
+            <>
+              <Button
+                onClick={generate}
+                disabled={!canGenerate}
+                title={canGenerate ? "" : "Write some guidance first"}
+              >
+                Generate ▸
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!canGenerate}
+                title={canGenerate ? "" : "Write some guidance first"}
+              >
+                Preview prompt
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -494,6 +512,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           onRetryLore={onRetryLore}
         />
       )}
+
+      <PromptPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        messages={previewMessages}
+      />
     </section>
   );
 }

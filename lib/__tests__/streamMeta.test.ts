@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest";
-import {
-  OR_META_PREFIX,
-  OR_META_SUFFIX,
-  extractWriterCost,
-} from "../agents/streamMeta";
+import { extractWriterCost } from "../agents/streamMeta";
 import type { AgentCall } from "../types";
+
+const DELIMITER = "550e8400-e29b-41d4-a716-446655440000";
 
 const sampleCall: AgentCall = {
   agent: "writer",
@@ -14,36 +12,26 @@ const sampleCall: AgentCall = {
   costUsd: 0.012345,
 };
 
-const frame = (call: AgentCall) =>
-  `${OR_META_PREFIX}${JSON.stringify(call)}${OR_META_SUFFIX}`;
-
 describe("extractWriterCost", () => {
-  it("returns null when the buffer contains no sentinel", () => {
-    expect(extractWriterCost("plain chapter text")).toBeNull();
+  it("returns null when the buffer contains no delimiter", () => {
+    expect(extractWriterCost("plain chapter text", DELIMITER)).toBeNull();
   });
 
-  it("parses the AgentCall from a trailing sentinel", () => {
-    const buffer = "chapter text\n\n" + frame(sampleCall);
-    expect(extractWriterCost(buffer)).toEqual(sampleCall);
+  it("returns null when the delimiter is an empty string", () => {
+    expect(extractWriterCost("any text", "")).toBeNull();
   });
 
-  it("returns null when the prefix is present but the suffix is missing", () => {
-    const buffer = `text${OR_META_PREFIX}${JSON.stringify(sampleCall)}`;
-    expect(extractWriterCost(buffer)).toBeNull();
+  it("parses the AgentCall from a trailing delimiter", () => {
+    const buffer = "chapter text\n\n" + DELIMITER + JSON.stringify(sampleCall);
+    expect(extractWriterCost(buffer, DELIMITER)).toEqual(sampleCall);
   });
 
-  it("returns null when the framed payload is not valid JSON", () => {
-    const buffer = `text${OR_META_PREFIX}not-json${OR_META_SUFFIX}`;
-    expect(extractWriterCost(buffer)).toBeNull();
+  it("returns null when bytes after the delimiter are not valid JSON", () => {
+    const buffer = `text${DELIMITER}not-json`;
+    expect(extractWriterCost(buffer, DELIMITER)).toBeNull();
   });
 
   it("returns null for an empty buffer", () => {
-    expect(extractWriterCost("")).toBeNull();
-  });
-
-  it("extracts the first framed payload when more than one is present", () => {
-    const other: AgentCall = { ...sampleCall, promptTokens: 999 };
-    const buffer = frame(sampleCall) + frame(other);
-    expect(extractWriterCost(buffer)).toEqual(sampleCall);
+    expect(extractWriterCost("", DELIMITER)).toBeNull();
   });
 });

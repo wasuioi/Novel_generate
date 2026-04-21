@@ -1,7 +1,8 @@
 import { streamText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { z } from "zod";
-import { OR_META_PREFIX, OR_META_SUFFIX } from "@/lib/agents/streamMeta";
+import { COST_DELIMITER_HEADER } from "@/lib/agents/streamMeta";
+import { MAX_OUTPUT_TOKENS } from "@/lib/agents/config";
 import { buildAgentCall } from "@/lib/agents/prices";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 const Body = z.object({
   model: z.string().min(1),
   temperature: z.number().min(0).max(2),
-  maxTokens: z.number().int().positive().max(16000),
+  maxTokens: z.number().int().positive().max(MAX_OUTPUT_TOKENS),
   messages: z.array(
     z.object({
       role: z.enum(["system", "user", "assistant"]),
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
     },
   });
 
+  const nonce = crypto.randomUUID();
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -61,9 +63,7 @@ export async function POST(req: Request) {
           usage.completionTokens,
         );
         if (cost) {
-          controller.enqueue(
-            encoder.encode(`${OR_META_PREFIX}${JSON.stringify(cost)}${OR_META_SUFFIX}`),
-          );
+          controller.enqueue(encoder.encode(`${nonce}${JSON.stringify(cost)}`));
         }
       } catch (err) {
         console.error("[/api/generate] stream failure:", err);
@@ -75,6 +75,9 @@ export async function POST(req: Request) {
   });
 
   return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      [COST_DELIMITER_HEADER]: nonce,
+    },
   });
 }
