@@ -15,10 +15,30 @@ const ENGLISH_BLOCK = [
 ].join("\n");
 
 export function buildMessages(novel: Novel): Message[] {
+  const editIndex = novel.draft.chapterId
+    ? novel.chapters.findIndex((c) => c.id === novel.draft.chapterId)
+    : -1;
+  const isEditing = editIndex >= 0;
+
+  const contextChapters = isEditing
+    ? novel.chapters.slice(0, editIndex)
+    : novel.chapters;
+
   const fullCount = SLIDING_WINDOW_FULL_COUNT;
-  const fullChapters = fullCount > 0 ? novel.chapters.slice(-fullCount) : [];
+  const fullChapters = fullCount > 0 ? contextChapters.slice(-fullCount) : [];
   const summarizedChapters =
-    fullCount > 0 ? novel.chapters.slice(0, -fullCount) : novel.chapters.slice();
+    fullCount > 0 ? contextChapters.slice(0, -fullCount) : contextChapters.slice();
+
+  // When rewriting chapter K, drop lore attached to chapter K or any later chapter,
+  // since that lore was extracted from content the model is now regenerating.
+  const chapterIndex = new Map(novel.chapters.map((c, i) => [c.id, i]));
+  const visibleLore = isEditing
+    ? novel.lore.filter((l) => {
+        if (!l.chapterId) return true;
+        const idx = chapterIndex.get(l.chapterId);
+        return idx !== undefined && idx < editIndex;
+      })
+    : novel.lore;
 
   const sections: string[] = ["You are an expert novel writer."];
 
@@ -26,8 +46,8 @@ export function buildMessages(novel: Novel): Message[] {
 
   sections.push("## Core story context and world-bible", novel.storyContext || "(empty)");
 
-  if (novel.lore.length > 0) {
-    const loreLines = novel.lore.map((l) => `- ${l.text}`).join("\n");
+  if (visibleLore.length > 0) {
+    const loreLines = visibleLore.map((l) => `- ${l.text}`).join("\n");
     sections.push("## Established lore", loreLines);
   }
 
@@ -51,8 +71,11 @@ export function buildMessages(novel: Novel): Message[] {
 
   const targetWords = novel.settings.targetWords;
   const minWords = Math.floor(targetWords * 0.8);
+  const openingLine = isEditing
+    ? `Rewrite chapter ${editIndex + 1}. Target length: approximately ${targetWords} words.`
+    : `Write the next chapter. Target length: approximately ${targetWords} words.`;
   const user = [
-    `Write the next chapter. Target length: approximately ${targetWords} words.`,
+    openingLine,
     `Develop the scene fully — do NOT stop short. Continue writing until you have covered the entire arc described in the guidance and reached at least ${minWords} words.`,
     "Do not pad with filler, but ensure the chapter has a proper beginning, middle, and end.",
     "Finish the final sentence completely before stopping. Keep pacing tight.",
