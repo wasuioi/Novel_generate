@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeNovel } from "../io";
+import { sanitizeNovel, serializeToJson, parseNovelJson } from "../io";
 import { DEFAULT_NOVEL } from "../types";
 
 describe("sanitizeNovel", () => {
@@ -48,5 +48,50 @@ describe("sanitizeNovel", () => {
     const chapter = { id: "c1", title: "T", prompt: "", content: "body", createdAt: 1 };
     const result = sanitizeNovel({ chapters: [chapter] });
     expect(result.chapters[0].summary).toBe("");
+  });
+});
+
+describe("serializeToJson / parseNovelJson round-trip", () => {
+  it("round-trips a full Novel via JSON", () => {
+    const n = {
+      ...DEFAULT_NOVEL,
+      storyContext: "Context.",
+      chapters: [{ id: "c1", title: "One", prompt: "p", content: "body", summary: "s", createdAt: 1 }],
+    };
+    const result = parseNovelJson(serializeToJson(n));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.novel).toEqual(n);
+  });
+
+  it("serializeToJson output is wrapped with version: 1", () => {
+    const raw = serializeToJson(DEFAULT_NOVEL);
+    const parsed = JSON.parse(raw);
+    expect(parsed.version).toBe(1);
+    expect(parsed.novel).toBeDefined();
+  });
+});
+
+describe("parseNovelJson errors", () => {
+  it("rejects invalid JSON", () => {
+    const r = parseNovelJson("not json");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/valid JSON/i);
+  });
+
+  it("rejects JSON null", () => {
+    const r = parseNovelJson("null");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/novel/i);
+  });
+
+  it("rejects JSON arrays", () => {
+    const r = parseNovelJson("[]");
+    expect(r.ok).toBe(false);
+  });
+
+  it("accepts any JSON object and sanitizes it", () => {
+    const r = parseNovelJson('{"weird": "field"}');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.novel.chapters).toEqual([]);
   });
 });

@@ -36,3 +36,22 @@ export function sanitizeNovel(raw: unknown): Novel {
     },
   };
 }
+
+export function serializeToJson(novel: Novel): string {
+  return JSON.stringify({ version: 1, novel }, null, 2);
+}
+
+export function parseNovelJson(
+  raw: string,
+): { ok: true; novel: Novel } | { ok: false; error: string } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: "File is not valid JSON" };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false, error: "File does not contain a novel" };
+  }
+  return { ok: true, novel: sanitizeNovel(parsed) };
+}
