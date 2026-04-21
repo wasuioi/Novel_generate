@@ -89,8 +89,8 @@ describe("ChapterSidebar draft edit row", () => {
     renderSidebar({ viewingId: "b" });
     const betaButton = (await screen.findByText("Beta")).closest("button");
     const draftEditButton = screen.getByText(/Draft edit/i).closest("button");
-    expect(betaButton?.className).toContain("bg-zinc-800");
-    expect(draftEditButton?.className).not.toContain("bg-zinc-800");
+    expect(betaButton?.classList.contains("bg-zinc-800")).toBe(true);
+    expect(draftEditButton?.classList.contains("bg-zinc-800")).toBe(false);
   });
 
   it("highlights the draft edit row when the editor is open (viewingId=null)", async () => {
@@ -103,8 +103,8 @@ describe("ChapterSidebar draft edit row", () => {
     renderSidebar({ viewingId: null });
     const betaButton = (await screen.findByText("Beta")).closest("button");
     const draftEditButton = screen.getByText(/Draft edit/i).closest("button");
-    expect(draftEditButton?.className).toContain("bg-zinc-800");
-    expect(betaButton?.className).not.toContain("bg-zinc-800");
+    expect(draftEditButton?.classList.contains("bg-zinc-800")).toBe(true);
+    expect(betaButton?.classList.contains("bg-zinc-800")).toBe(false);
   });
 
   it("clicking the draft edit row calls onView(null)", async () => {
