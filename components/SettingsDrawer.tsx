@@ -1,8 +1,27 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNovel } from "@/lib/store";
 import { useReview } from "@/lib/review";
+import {
+  serializeToJson,
+  serializeToMarkdown,
+  parseNovelJson,
+} from "@/lib/io";
 import { Button } from "./ui/Button";
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function triggerDownload(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const MODEL_OPTIONS = [
   "anthropic/claude-sonnet-4.6",
@@ -15,7 +34,7 @@ const MODEL_OPTIONS = [
 type Props = { open: boolean; onClose: () => void };
 
 export function SettingsDrawer({ open, onClose }: Props) {
-  const { novel, update, reset } = useNovel();
+  const { novel, update, replace, reset } = useNovel();
   const { reviewing } = useReview();
 
   // Migrate stale stored model slugs (from earlier app versions) to a current one.
@@ -33,6 +52,18 @@ export function SettingsDrawer({ open, onClose }: Props) {
       reset();
       onClose();
     }
+  };
+
+  const handleExportMd = () => {
+    triggerDownload(`novel-${today()}.md`, serializeToMarkdown(novel), "text/markdown");
+  };
+
+  const handleExportJson = () => {
+    triggerDownload(
+      `novel-backup-${today()}.json`,
+      serializeToJson(novel),
+      "application/json",
+    );
   };
 
   return (
@@ -120,7 +151,15 @@ export function SettingsDrawer({ open, onClose }: Props) {
         </p>
       </div>
 
-      <div className="absolute bottom-0 inset-x-0 p-4 border-t border-zinc-800">
+      <div className="absolute bottom-0 inset-x-0 p-4 border-t border-zinc-800 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={handleExportMd}>
+            Export as .md
+          </Button>
+          <Button variant="secondary" onClick={handleExportJson}>
+            Export backup
+          </Button>
+        </div>
         <Button variant="danger" className="w-full" onClick={onReset}>
           Start New Novel (Clear All Data)
         </Button>
