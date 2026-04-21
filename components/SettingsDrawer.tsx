@@ -20,7 +20,7 @@ function triggerDownload(filename: string, content: string, mime: string) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 const MODEL_OPTIONS = [
@@ -43,6 +43,32 @@ export function SettingsDrawer({ open, onClose }: Props) {
       update((n) => { n.settings.model = MODEL_OPTIONS[0]; });
     }
   }, [novel.settings.model, update]);
+
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // let the user re-pick the same file
+    if (!file) return;
+    const text = await file.text();
+    const result = parseNovelJson(text);
+    if (!result.ok) {
+      setImportError(result.error);
+      return;
+    }
+    const ok = window.confirm(
+      "Import will replace your current novel. This cannot be undone. Continue?",
+    );
+    if (!ok) return;
+    replace(result.novel);
+    setImportError(null);
+    onClose();
+  };
 
   const onReset = () => {
     const ok = window.confirm(
@@ -160,6 +186,21 @@ export function SettingsDrawer({ open, onClose }: Props) {
             Export backup
           </Button>
         </div>
+        <Button variant="secondary" className="w-full" onClick={handleImportClick}>
+          Import backup
+        </Button>
+        {importError && (
+          <p className="text-xs text-red-400" aria-live="polite">
+            {importError}
+          </p>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleFileSelected}
+          className="hidden"
+        />
         <Button variant="danger" className="w-full" onClick={onReset}>
           Start New Novel (Clear All Data)
         </Button>
