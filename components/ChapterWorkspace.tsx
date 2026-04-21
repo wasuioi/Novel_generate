@@ -13,6 +13,7 @@ import type { AgentCall } from "@/lib/types";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
+import { PromptPreviewModal } from "./PromptPreviewModal";
 
 type Props = {
   viewingId: string | null;
@@ -44,6 +45,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const { state: reviewState, setState: setReview, reviewing } = useReview();
   const { draft, settings } = novel;
   const [streaming, setStreaming] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const summaryAbortRef = useRef<AbortController | null>(null);
@@ -433,17 +435,27 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           placeholder="What should happen in this chapter?"
           rows={4}
         />
-        <div>
+        <div className="flex gap-2">
           {streaming ? (
             <Button variant="danger" onClick={stop}>■ Stop generating</Button>
           ) : (
-            <Button
-              onClick={generate}
-              disabled={!canGenerate}
-              title={canGenerate ? "" : "Write some guidance first"}
-            >
-              Generate ▸
-            </Button>
+            <>
+              <Button
+                onClick={generate}
+                disabled={!canGenerate}
+                title={canGenerate ? "" : "Write some guidance first"}
+              >
+                Generate ▸
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!canGenerate}
+                title={canGenerate ? "" : "Write some guidance first"}
+              >
+                Preview prompt
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -494,6 +506,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           onRetryLore={onRetryLore}
         />
       )}
+
+      <PromptPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        messages={buildMessages(novel)}
+      />
     </section>
   );
 }
