@@ -29,6 +29,7 @@ function load(): Novel {
 type NovelContextValue = {
   novel: Novel;
   update: (mutator: (draft: Novel) => void) => void;
+  replace: (novel: Novel) => void;
   reset: () => void;
 };
 
@@ -61,6 +62,12 @@ export function NovelProvider({ children }: { children: ReactNode }) {
     [save],
   );
 
+  const replace = useCallback((n: Novel) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(n));
+    setNovel(n);
+  }, []);
+
   const reset = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     window.localStorage.removeItem(STORAGE_KEY);
@@ -68,7 +75,7 @@ export function NovelProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <NovelContext.Provider value={{ novel, update, reset }}>
+    <NovelContext.Provider value={{ novel, update, replace, reset }}>
       {children}
     </NovelContext.Provider>
   );
