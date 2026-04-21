@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeNovel, serializeToJson, parseNovelJson } from "../io";
+import { sanitizeNovel, serializeToJson, parseNovelJson, serializeToMarkdown } from "../io";
 import { DEFAULT_NOVEL } from "../types";
 
 describe("sanitizeNovel", () => {
@@ -93,5 +93,36 @@ describe("parseNovelJson errors", () => {
     const r = parseNovelJson('{"weird": "field"}');
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.novel.chapters).toEqual([]);
+  });
+});
+
+describe("serializeToMarkdown", () => {
+  it("returns empty string when there are no chapters", () => {
+    expect(serializeToMarkdown(DEFAULT_NOVEL)).toBe("");
+  });
+
+  it("formats each chapter as '# Chapter N: <title>\\n\\n<content>' joined by \\n\\n", () => {
+    const n = {
+      ...DEFAULT_NOVEL,
+      chapters: [
+        { id: "c1", title: "One", prompt: "", content: "First body.", summary: "", createdAt: 1 },
+        { id: "c2", title: "Two", prompt: "", content: "Second body.", summary: "", createdAt: 2 },
+      ],
+    };
+    expect(serializeToMarkdown(n)).toBe(
+      "# Chapter 1: One\n\nFirst body.\n\n# Chapter 2: Two\n\nSecond body.",
+    );
+  });
+
+  it("does not include storyContext, lore, draft, or settings", () => {
+    const n = {
+      ...DEFAULT_NOVEL,
+      storyContext: "SHOULD NOT APPEAR",
+      chapters: [{ id: "c1", title: "T", prompt: "", content: "body", summary: "", createdAt: 1 }],
+      lore: [{ id: "l1", text: "SHOULD NOT APPEAR", source: "ai", createdAt: 1 } as const],
+      draft: { chapterId: null, title: "", prompt: "SHOULD NOT APPEAR", output: "SHOULD NOT APPEAR" },
+    };
+    const md = serializeToMarkdown(n);
+    expect(md).not.toMatch(/SHOULD NOT APPEAR/);
   });
 });

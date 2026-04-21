@@ -55,3 +55,9 @@ export function parseNovelJson(
   }
   return { ok: true, novel: sanitizeNovel(parsed) };
 }
+
+export function serializeToMarkdown(novel: Novel): string {
+  return novel.chapters
+    .map((c, i) => `# Chapter ${i + 1}: ${c.title}\n\n${c.content}`)
+    .join("\n\n");
+}
