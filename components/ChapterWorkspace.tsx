@@ -1,13 +1,17 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNovel } from "@/lib/store";
 import { useReview, type LoreCandidate } from "@/lib/review";
 import { buildMessages } from "@/lib/prompt";
 import { readBufferedStream } from "@/lib/stream";
 import { parseSummarizerOutput } from "@/lib/agents/summarizer";
 import { parseLoreKeeperOutput } from "@/lib/agents/loreKeeper";
-import { AGENT_TIMEOUT_MS } from "@/lib/agents/config";
-import { OR_META_PREFIX, extractWriterCost } from "@/lib/agents/streamMeta";
+import {
+  AGENT_TIMEOUT_MS,
+  MAX_OUTPUT_TOKENS,
+  TOKENS_PER_WORD,
+} from "@/lib/agents/config";
+import { COST_DELIMITER_HEADER, extractWriterCost } from "@/lib/agents/streamMeta";
 import { buildChapterCost } from "@/lib/agents/prices";
 import type { AgentCall } from "@/lib/types";
 import { Button } from "./ui/Button";
@@ -53,6 +57,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
   const viewedChapter = viewingId ? novel.chapters.find((c) => c.id === viewingId) : undefined;
   const isEditingExisting = Boolean(draft.chapterId);
+  const previewMessages = useMemo(() => buildMessages(novel), [novel]);
   const hasSomethingToDiscard =
     isEditingExisting ||
     draftActive ||
@@ -88,8 +93,8 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           model: settings.model,
           temperature: settings.temperature,
           maxTokens: Math.min(
-            Math.floor(settings.targetWords * (settings.outputLanguage === "th" ? 7 : 2)),
-            16000,
+            Math.floor(settings.targetWords * TOKENS_PER_WORD[settings.outputLanguage]),
+            MAX_OUTPUT_TOKENS,
           ),
           messages: buildMessages(novel),
         }),
@@ -99,17 +104,18 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         setError(`${res.status} · ${await res.text()}`);
         return;
       }
+      const delimiter = res.headers.get(COST_DELIMITER_HEADER) ?? "";
       await readBufferedStream(
         res.body,
         (chunk) => {
           received += chunk;
-          const metaIdx = received.indexOf(OR_META_PREFIX);
+          const metaIdx = delimiter ? received.indexOf(delimiter) : -1;
           const clean = metaIdx >= 0 ? received.slice(0, metaIdx) : received;
           update((n) => { n.draft.output = clean; });
         },
         controller.signal,
       );
-      const writerCost = extractWriterCost(received);
+      const writerCost = extractWriterCost(received, delimiter);
       if (writerCost) {
         update((n) => { n.draft.writerCost = writerCost; });
       }
@@ -510,7 +516,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       <PromptPreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        messages={buildMessages(novel)}
+        messages={previewMessages}
       />
     </section>
   );

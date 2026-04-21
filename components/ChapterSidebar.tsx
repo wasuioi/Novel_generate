@@ -22,7 +22,8 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
 
   const showDraftRow =
     draft.chapterId === null && (draftActive || Boolean(draft.title || draft.output));
-  const newChapterDisabled = showDraftRow;
+  const editingExisting = draft.chapterId !== null;
+  const newChapterDisabled = showDraftRow || editingExisting;
   const novelTotalUsd = chapters.reduce((sum, c) => sum + (c.cost?.totalUsd ?? 0), 0);
 
   const newChapter = () => {
@@ -91,7 +92,7 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
           className="w-full"
           onClick={newChapter}
           disabled={newChapterDisabled}
-          title={newChapterDisabled ? "Already in a draft — use the Draft row in the sidebar" : ""}
+          title={newChapterDisabled ? "Finish or discard the current draft first" : ""}
         >
           + New chapter
         </Button>
