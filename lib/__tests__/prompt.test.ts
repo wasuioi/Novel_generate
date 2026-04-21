@@ -111,3 +111,64 @@ describe("buildMessages", () => {
     expect(msgs[0].content).not.toContain("Previous chapter");
   });
 });
+
+describe("buildMessages when editing an existing chapter", () => {
+  const makeNovel = (): Novel => ({
+    ...DEFAULT_NOVEL,
+    storyContext: "Medieval fantasy.",
+    chapters: [
+      { id: "c1", title: "Ch1", prompt: "", content: "BODY 1", summary: "Hero arrives.",   createdAt: 1 },
+      { id: "c2", title: "Ch2", prompt: "", content: "BODY 2", summary: "Map is found.",   createdAt: 2 },
+      { id: "c3", title: "Ch3", prompt: "", content: "BODY 3", summary: "Forest entered.", createdAt: 3 },
+      { id: "c4", title: "Ch4", prompt: "", content: "BODY 4", summary: "Cave explored.",  createdAt: 4 },
+      { id: "c5", title: "Ch5", prompt: "", content: "BODY 5", summary: "Dragon faced.",   createdAt: 5 },
+    ],
+    lore: [
+      { id: "lA", text: "Hero's sword is Mythril.", source: "ai",   chapterId: "c1", createdAt: 1 },
+      { id: "lB", text: "The map is cursed.",       source: "ai",   chapterId: "c2", createdAt: 2 },
+      { id: "lC", text: "Forest is haunted.",       source: "ai",   chapterId: "c3", createdAt: 3 },
+      { id: "lD", text: "Cave holds crystals.",     source: "ai",   chapterId: "c4", createdAt: 4 },
+      { id: "lE", text: "Dragon fears fire.",       source: "ai",   chapterId: "c5", createdAt: 5 },
+      { id: "lU", text: "Magic is rare.",           source: "user", createdAt: 1 },
+    ],
+    draft: { chapterId: "c3", title: "Ch3", prompt: "Rewrite forest scene.", output: "" },
+  });
+
+  it("excludes chapters at or after the one being edited from the context", () => {
+    const sys = buildMessages(makeNovel())[0].content;
+    expect(sys).toContain("Hero arrives.");  // c1 summary kept
+    expect(sys).toContain("BODY 2");         // c2 full kept
+    expect(sys).not.toContain("BODY 3");
+    expect(sys).not.toContain("BODY 4");
+    expect(sys).not.toContain("BODY 5");
+    expect(sys).not.toContain("Forest entered.");
+    expect(sys).not.toContain("Cave explored.");
+    expect(sys).not.toContain("Dragon faced.");
+  });
+
+  it("excludes lore attached to the edited chapter or later chapters", () => {
+    const sys = buildMessages(makeNovel())[0].content;
+    expect(sys).toContain("Hero's sword is Mythril."); // c1
+    expect(sys).toContain("The map is cursed.");       // c2
+    expect(sys).toContain("Magic is rare.");           // user lore
+    expect(sys).not.toContain("Forest is haunted.");   // c3 (being edited)
+    expect(sys).not.toContain("Cave holds crystals."); // c4
+    expect(sys).not.toContain("Dragon fears fire.");   // c5
+  });
+
+  it("instructs the model to rewrite the chosen chapter, not continue past the latest", () => {
+    const user = buildMessages(makeNovel())[1].content;
+    expect(user).toContain("Rewrite chapter 3");
+    expect(user).not.toContain("Write the next chapter");
+    expect(user).toContain("Rewrite forest scene."); // guidance preserved
+  });
+
+  it("when editing the first chapter, omits story-so-far and previous-chapter sections", () => {
+    const novel = makeNovel();
+    novel.draft.chapterId = "c1";
+    const msgs = buildMessages(novel);
+    expect(msgs[0].content).not.toContain("Story so far");
+    expect(msgs[0].content).not.toContain("Previous chapter");
+    expect(msgs[1].content).toContain("Rewrite chapter 1");
+  });
+});
