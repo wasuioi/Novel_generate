@@ -341,6 +341,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
   const editViewedChapter = () => {
     if (!viewedChapter) return;
+
+    if (draft.chapterId === viewedChapter.id) {
+      onClearView();
+      return;
+    }
+
     if (
       draft.chapterId === null &&
       draft.output.trim() &&
@@ -348,6 +354,24 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     ) {
       return;
     }
+
+    if (draft.chapterId !== null && draft.chapterId !== viewedChapter.id) {
+      const origin = novel.chapters.find((c) => c.id === draft.chapterId);
+      const dirty =
+        !!origin &&
+        (draft.title !== origin.title ||
+          draft.prompt !== origin.prompt ||
+          draft.output !== origin.content);
+      if (
+        dirty &&
+        !window.confirm(
+          `You have unsaved changes in your edit of "${origin!.title || "(untitled)"}". Loading this chapter will discard them. Continue?`,
+        )
+      ) {
+        return;
+      }
+    }
+
     update((n) => {
       n.draft = {
         chapterId: viewedChapter.id,

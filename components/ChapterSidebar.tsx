@@ -1,4 +1,5 @@
 "use client";
+import { Fragment } from "react";
 import { useNovel } from "@/lib/store";
 import { useReview } from "@/lib/review";
 import { Button } from "./ui/Button";
@@ -44,26 +45,43 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
           <p className="p-4 text-xs text-zinc-500">No chapters yet.</p>
         )}
         {chapters.map((c) => {
-          const highlight =
-            viewingId === c.id || (viewingId === null && draft.chapterId === c.id);
+          const chapterHighlight = viewingId === c.id;
+          const draftEditHighlight = viewingId === null && draft.chapterId === c.id;
+          const draftEditTitle = draft.title || c.title || "(untitled)";
           return (
-            <button
-              key={c.id}
-              onClick={() => onView(c.id)}
-              className={`w-full text-left p-3 border-b border-zinc-900 hover:bg-zinc-800 ${
-                highlight ? "bg-zinc-800" : ""
-              }`}
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <div className="text-sm font-medium truncate">{c.title || "(untitled)"}</div>
-                {c.cost && (
-                  <div className="text-[10px] font-mono text-zinc-500 shrink-0">
-                    ${c.cost.totalUsd.toFixed(4)}
+            <Fragment key={c.id}>
+              <button
+                onClick={() => onView(c.id)}
+                className={`w-full text-left p-3 border-b border-zinc-900 hover:bg-zinc-800 ${
+                  chapterHighlight ? "bg-zinc-800" : ""
+                }`}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="text-sm font-medium truncate">{c.title || "(untitled)"}</div>
+                  {c.cost && (
+                    <div className="text-[10px] font-mono text-zinc-500 shrink-0">
+                      ${c.cost.totalUsd.toFixed(4)}
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{preview(c.content)}</div>
+              </button>
+              {draft.chapterId === c.id && (
+                <button
+                  onClick={() => onView(null)}
+                  className={`w-full text-left p-3 border-b border-zinc-900 hover:bg-zinc-800 ${
+                    draftEditHighlight ? "bg-zinc-800" : ""
+                  }`}
+                >
+                  <div className="text-sm font-medium text-emerald-400">
+                    ▸ Draft edit — {draftEditTitle}
                   </div>
-                )}
-              </div>
-              <div className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{preview(c.content)}</div>
-            </button>
+                  <div className="text-xs text-zinc-500 mt-0.5 line-clamp-2">
+                    {preview(draft.output) || "(empty)"}
+                  </div>
+                </button>
+              )}
+            </Fragment>
           );
         })}
         {showDraftRow && (
