@@ -2,38 +2,34 @@ import { DEFAULT_NOVEL, type Chapter, type Novel } from "./types";
 
 type StoredChapter = Omit<Chapter, "summary"> & { summary?: string };
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
 function unwrap(obj: Record<string, unknown>): Record<string, unknown> {
-  if (
-    obj.version === 1 &&
-    obj.novel &&
-    typeof obj.novel === "object" &&
-    !Array.isArray(obj.novel)
-  ) {
-    return obj.novel as Record<string, unknown>;
+  if (obj.version === 1 && isPlainObject(obj.novel)) {
+    return obj.novel;
   }
   return obj;
 }
 
 export function sanitizeNovel(raw: unknown): Novel {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return DEFAULT_NOVEL;
-  const parsed = unwrap(raw as Record<string, unknown>);
-  const rawChapters = parsed.chapters;
-  const chapters: Chapter[] = Array.isArray(rawChapters)
-    ? (rawChapters as StoredChapter[]).map((c) => ({ ...c, summary: c.summary ?? "" }))
+  if (!isPlainObject(raw)) return DEFAULT_NOVEL;
+  const parsed = unwrap(raw);
+  const chapters: Chapter[] = Array.isArray(parsed.chapters)
+    ? (parsed.chapters as StoredChapter[]).map((c) => ({ ...c, summary: c.summary ?? "" }))
     : DEFAULT_NOVEL.chapters;
   return {
-    ...DEFAULT_NOVEL,
-    ...(parsed as Partial<Novel>),
+    storyContext:
+      typeof parsed.storyContext === "string" ? parsed.storyContext : DEFAULT_NOVEL.storyContext,
     chapters,
     lore: Array.isArray(parsed.lore) ? (parsed.lore as Novel["lore"]) : DEFAULT_NOVEL.lore,
-    settings: {
-      ...DEFAULT_NOVEL.settings,
-      ...((parsed.settings ?? {}) as Partial<Novel["settings"]>),
-    },
-    draft: {
-      ...DEFAULT_NOVEL.draft,
-      ...((parsed.draft ?? {}) as Partial<Novel["draft"]>),
-    },
+    settings: isPlainObject(parsed.settings)
+      ? { ...DEFAULT_NOVEL.settings, ...(parsed.settings as Partial<Novel["settings"]>) }
+      : DEFAULT_NOVEL.settings,
+    draft: isPlainObject(parsed.draft)
+      ? { ...DEFAULT_NOVEL.draft, ...(parsed.draft as Partial<Novel["draft"]>) }
+      : DEFAULT_NOVEL.draft,
   };
 }
 
@@ -50,8 +46,11 @@ export function parseNovelJson(
   } catch {
     return { ok: false, error: "File is not valid JSON" };
   }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+  if (!isPlainObject(parsed)) {
     return { ok: false, error: "File does not contain a novel" };
+  }
+  if ("version" in parsed && parsed.version !== 1) {
+    return { ok: false, error: `Unsupported backup version: ${String(parsed.version)}` };
   }
   return { ok: true, novel: sanitizeNovel(parsed) };
 }

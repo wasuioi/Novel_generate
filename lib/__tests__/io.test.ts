@@ -49,6 +49,31 @@ describe("sanitizeNovel", () => {
     const result = sanitizeNovel({ chapters: [chapter] });
     expect(result.chapters[0].summary).toBe("");
   });
+
+  it("falls back to default draft when draft is not a plain object", () => {
+    expect(sanitizeNovel({ draft: "evil" }).draft).toEqual(DEFAULT_NOVEL.draft);
+    expect(sanitizeNovel({ draft: 42 }).draft).toEqual(DEFAULT_NOVEL.draft);
+    expect(sanitizeNovel({ draft: [1, 2] }).draft).toEqual(DEFAULT_NOVEL.draft);
+    expect(sanitizeNovel({ draft: null }).draft).toEqual(DEFAULT_NOVEL.draft);
+  });
+
+  it("falls back to default settings when settings is not a plain object", () => {
+    expect(sanitizeNovel({ settings: "bad" }).settings).toEqual(DEFAULT_NOVEL.settings);
+    expect(sanitizeNovel({ settings: 0 }).settings).toEqual(DEFAULT_NOVEL.settings);
+    expect(sanitizeNovel({ settings: [] }).settings).toEqual(DEFAULT_NOVEL.settings);
+  });
+
+  it("uses default storyContext when storyContext is not a string", () => {
+    expect(sanitizeNovel({ storyContext: 123 }).storyContext).toBe(DEFAULT_NOVEL.storyContext);
+    expect(sanitizeNovel({ storyContext: null }).storyContext).toBe(DEFAULT_NOVEL.storyContext);
+    expect(sanitizeNovel({ storyContext: {} }).storyContext).toBe(DEFAULT_NOVEL.storyContext);
+  });
+
+  it("discards unknown top-level fields", () => {
+    const result = sanitizeNovel({ storyContext: "keep", bogus: "drop me" }) as Record<string, unknown>;
+    expect(result.bogus).toBeUndefined();
+    expect(result.storyContext).toBe("keep");
+  });
 });
 
 describe("serializeToJson / parseNovelJson round-trip", () => {
@@ -93,6 +118,12 @@ describe("parseNovelJson errors", () => {
     const r = parseNovelJson('{"weird": "field"}');
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.novel.chapters).toEqual([]);
+  });
+
+  it("rejects wrapped backup with an unsupported version", () => {
+    const r = parseNovelJson('{"version": 2, "novel": {}}');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/version/i);
   });
 });
 

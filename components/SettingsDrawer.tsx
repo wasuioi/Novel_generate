@@ -10,7 +10,9 @@ import {
 import { Button } from "./ui/Button";
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function triggerDownload(filename: string, content: string, mime: string) {
@@ -55,7 +57,13 @@ export function SettingsDrawer({ open, onClose }: Props) {
     const file = e.target.files?.[0];
     e.target.value = ""; // let the user re-pick the same file
     if (!file) return;
-    const text = await file.text();
+    let text: string;
+    try {
+      text = await file.text();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Could not read file");
+      return;
+    }
     const result = parseNovelJson(text);
     if (!result.ok) {
       setImportError(result.error);
