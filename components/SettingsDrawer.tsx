@@ -62,7 +62,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
       return;
     }
     const ok = window.confirm(
-      "Import will replace your current novel. This cannot be undone. Continue?",
+      `Import "${file.name}"?\n\nThis will replace your current novel and cannot be undone.`,
     );
     if (!ok) return;
     replace(result.novel);
@@ -80,16 +80,23 @@ export function SettingsDrawer({ open, onClose }: Props) {
     }
   };
 
+  const promptFilename = (defaultName: string, ext: string): string | null => {
+    const input = window.prompt("Save as:", defaultName);
+    if (input === null) return null; // user cancelled
+    const name = input.trim() || defaultName;
+    return name.endsWith(ext) ? name : `${name}${ext}`;
+  };
+
   const handleExportMd = () => {
-    triggerDownload(`novel-${today()}.md`, serializeToMarkdown(novel), "text/markdown");
+    const filename = promptFilename(`novel-${today()}.md`, ".md");
+    if (filename === null) return;
+    triggerDownload(filename, serializeToMarkdown(novel), "text/markdown");
   };
 
   const handleExportJson = () => {
-    triggerDownload(
-      `novel-backup-${today()}.json`,
-      serializeToJson(novel),
-      "application/json",
-    );
+    const filename = promptFilename(`novel-backup-${today()}.json`, ".json");
+    if (filename === null) return;
+    triggerDownload(filename, serializeToJson(novel), "application/json");
   };
 
   return (
