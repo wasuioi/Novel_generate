@@ -488,6 +488,11 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
             </>
           )}
         </div>
+        {streaming && !draft.output && (
+          <p className="text-xs text-zinc-400 animate-pulse">
+            Model is thinking…
+          </p>
+        )}
       </div>
 
       {error && (
