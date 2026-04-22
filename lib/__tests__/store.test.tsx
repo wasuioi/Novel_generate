@@ -67,4 +67,20 @@ describe("useNovel", () => {
     expect(result.current.novel.settings.targetWords).toBe(1800);
     expect(result.current.novel.settings.outputLanguage).toBe("en");
   });
+
+  it("replace() swaps state and persists immediately", () => {
+    const { result } = renderHook(() => useNovel(), { wrapper });
+    const incoming = {
+      ...DEFAULT_NOVEL,
+      storyContext: "Restored from backup.",
+      chapters: [
+        { id: "c1", title: "Ch", prompt: "", content: "body", summary: "", createdAt: 1 },
+      ],
+    };
+    act(() => { result.current.replace(incoming); });
+    expect(result.current.novel).toEqual(incoming);
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored.storyContext).toBe("Restored from backup.");
+    expect(stored.chapters).toHaveLength(1);
+  });
 });

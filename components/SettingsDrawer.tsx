@@ -1,8 +1,29 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNovel } from "@/lib/store";
 import { useReview } from "@/lib/review";
+import {
+  serializeToJson,
+  serializeToMarkdown,
+  parseNovelJson,
+} from "@/lib/io";
 import { Button } from "./ui/Button";
+
+function today(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function triggerDownload(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
 
 const MODEL_OPTIONS = [
   "anthropic/claude-sonnet-4.6",
@@ -15,7 +36,7 @@ const MODEL_OPTIONS = [
 type Props = { open: boolean; onClose: () => void };
 
 export function SettingsDrawer({ open, onClose }: Props) {
-  const { novel, update, reset } = useNovel();
+  const { novel, update, replace, reset } = useNovel();
   const { reviewing } = useReview();
 
   // Migrate stale stored model slugs (from earlier app versions) to a current one.
@@ -25,6 +46,38 @@ export function SettingsDrawer({ open, onClose }: Props) {
     }
   }, [novel.settings.model, update]);
 
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // let the user re-pick the same file
+    if (!file) return;
+    let text: string;
+    try {
+      text = await file.text();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Could not read file");
+      return;
+    }
+    const result = parseNovelJson(text);
+    if (!result.ok) {
+      setImportError(result.error);
+      return;
+    }
+    const ok = window.confirm(
+      `Import "${file.name}"?\n\nThis will replace your current novel and cannot be undone.`,
+    );
+    if (!ok) return;
+    replace(result.novel);
+    setImportError(null);
+    onClose();
+  };
+
   const onReset = () => {
     const ok = window.confirm(
       "This deletes your story context, all saved chapters, and the current draft. This cannot be undone. Continue?",
@@ -33,6 +86,25 @@ export function SettingsDrawer({ open, onClose }: Props) {
       reset();
       onClose();
     }
+  };
+
+  const promptFilename = (defaultName: string, ext: string): string | null => {
+    const input = window.prompt("Save as:", defaultName);
+    if (input === null) return null; // user cancelled
+    const name = input.trim() || defaultName;
+    return name.endsWith(ext) ? name : `${name}${ext}`;
+  };
+
+  const handleExportMd = () => {
+    const filename = promptFilename(`novel-${today()}.md`, ".md");
+    if (filename === null) return;
+    triggerDownload(filename, serializeToMarkdown(novel), "text/markdown");
+  };
+
+  const handleExportJson = () => {
+    const filename = promptFilename(`novel-backup-${today()}.json`, ".json");
+    if (filename === null) return;
+    triggerDownload(filename, serializeToJson(novel), "application/json");
   };
 
   return (
@@ -120,7 +192,30 @@ export function SettingsDrawer({ open, onClose }: Props) {
         </p>
       </div>
 
-      <div className="absolute bottom-0 inset-x-0 p-4 border-t border-zinc-800">
+      <div className="absolute bottom-0 inset-x-0 p-4 border-t border-zinc-800 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={handleExportMd}>
+            Export as .md
+          </Button>
+          <Button variant="secondary" onClick={handleExportJson}>
+            Export backup
+          </Button>
+        </div>
+        <Button variant="secondary" className="w-full" onClick={handleImportClick}>
+          Import backup
+        </Button>
+        {importError && (
+          <p className="text-xs text-red-400" aria-live="polite">
+            {importError}
+          </p>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleFileSelected}
+          className="hidden"
+        />
         <Button variant="danger" className="w-full" onClick={onReset}>
           Start New Novel (Clear All Data)
         </Button>

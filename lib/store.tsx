@@ -9,31 +9,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DEFAULT_NOVEL, type Chapter, type Novel } from "./types";
+import { DEFAULT_NOVEL, type Novel } from "./types";
+import { sanitizeNovel } from "./io";
 
 export const STORAGE_KEY = "novel-generate:v1";
 const DEBOUNCE_MS = 300;
-
-type StoredChapter = Omit<Chapter, "summary"> & { summary?: string };
-type StoredNovel = Omit<Partial<Novel>, "chapters"> & { chapters?: StoredChapter[] };
 
 function load(): Novel {
   if (typeof window === "undefined") return DEFAULT_NOVEL;
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) return DEFAULT_NOVEL;
   try {
-    const parsed = JSON.parse(raw) as StoredNovel;
-    const chapters: Chapter[] = Array.isArray(parsed.chapters)
-      ? parsed.chapters.map((c) => ({ ...c, summary: c.summary ?? "" }))
-      : DEFAULT_NOVEL.chapters;
-    return {
-      ...DEFAULT_NOVEL,
-      ...parsed,
-      chapters,
-      lore: Array.isArray(parsed.lore) ? parsed.lore : DEFAULT_NOVEL.lore,
-      settings: { ...DEFAULT_NOVEL.settings, ...(parsed.settings ?? {}) },
-      draft:    { ...DEFAULT_NOVEL.draft,    ...(parsed.draft    ?? {}) },
-    };
+    return sanitizeNovel(JSON.parse(raw));
   } catch {
     return DEFAULT_NOVEL;
   }
@@ -42,6 +29,7 @@ function load(): Novel {
 type NovelContextValue = {
   novel: Novel;
   update: (mutator: (draft: Novel) => void) => void;
+  replace: (novel: Novel) => void;
   reset: () => void;
 };
 
@@ -74,6 +62,12 @@ export function NovelProvider({ children }: { children: ReactNode }) {
     [save],
   );
 
+  const replace = useCallback((n: Novel) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(n));
+    setNovel(n);
+  }, []);
+
   const reset = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     window.localStorage.removeItem(STORAGE_KEY);
@@ -81,7 +75,7 @@ export function NovelProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <NovelContext.Provider value={{ novel, update, reset }}>
+    <NovelContext.Provider value={{ novel, update, replace, reset }}>
       {children}
     </NovelContext.Provider>
   );
