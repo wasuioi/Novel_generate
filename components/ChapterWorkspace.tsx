@@ -18,6 +18,7 @@ import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
 import { PromptPreviewModal } from "./PromptPreviewModal";
+import { HelpPopover } from "./ui/HelpPopover";
 
 type Props = {
   viewingId: string | null;
@@ -447,6 +448,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
   const editorSection = (
     <div className={reviewing ? "pointer-events-none opacity-50" : ""}>
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-3">
+        Chapter draft
+        <HelpPopover ariaLabel="Help: Chapter draft">
+          พื้นที่สร้างตอน: ใส่ชื่อตอน, โครงสั้น ๆ ของเนื้อหา, แล้วกด Generate เพื่อให้ AI ร่างให้ แก้ไขได้เสมอก่อน save
+        </HelpPopover>
+      </h2>
       <div className="space-y-2">
         <label className="text-xs uppercase text-zinc-400">Chapter title</label>
         <input
