@@ -124,7 +124,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
             Model
-            <HelpPopover ariaLabel="Help: Model">
+            <HelpPopover side="right" ariaLabel="Help: Model">
               เลือก AI ที่จะใช้ Generate:
               {"\n"}• Claude Sonnet 4.6 — สมดุลคุณภาพ/ความเร็ว/ค่าใช้จ่าย เหมาะกับงานประจำ
               {"\n"}• Claude Opus 4.7 — คุณภาพสูงสุด เข้าใจบริบทซับซ้อน ช้า+แพงกว่า เหมาะกับตอนสำคัญ
@@ -146,7 +146,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
             Temperature · {novel.settings.temperature.toFixed(1)}
-            <HelpPopover ariaLabel="Help: Temperature">
+            <HelpPopover side="right" ariaLabel="Help: Temperature">
               ควบคุมความหลากหลายของคำที่ AI เลือกใช้
               {"\n"}• 0-0.5 (ต่ำ): คาดเดาได้ คำคุ้นเคย
               {"\n"}• 0.6-0.9 (กลาง): สมดุล สร้างสรรค์+สอดคล้อง
@@ -168,7 +168,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
             Output language
-            <HelpPopover ariaLabel="Help: Output language">
+            <HelpPopover side="right" ariaLabel="Help: Output language">
               ภาษาที่ AI จะใช้เขียน เปลี่ยนได้ตลอด ไม่จำเป็นต้องตรงกับภาษาที่ใช้ใน Story Context
             </HelpPopover>
           </label>
@@ -199,7 +199,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
             Target chapter length · {novel.settings.targetWords} words
-            <HelpPopover ariaLabel="Help: Target chapter length">
+            <HelpPopover side="right" ariaLabel="Help: Target chapter length">
               ความยาวโดยประมาณของแต่ละตอน (คำ) AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
             </HelpPopover>
           </label>
@@ -225,7 +225,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
             <Button variant="secondary" onClick={handleExportMd} className="flex-1">
               Export as .md
             </Button>
-            <HelpPopover ariaLabel="Help: Export as .md">
+            <HelpPopover side="right" ariaLabel="Help: Export as .md">
               ดาวน์โหลดเนื้อหานิยาย (Story Context + ทุกตอน) เป็นไฟล์ Markdown อ่านได้ในโปรแกรมทั่วไป (Obsidian, VSCode, Notion) เหมาะกับการส่งออกไปใช้ที่อื่น
             </HelpPopover>
           </div>
@@ -233,7 +233,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
             <Button variant="secondary" onClick={handleExportJson} className="flex-1">
               Export backup
             </Button>
-            <HelpPopover ariaLabel="Help: Export backup">
+            <HelpPopover side="right" ariaLabel="Help: Export backup">
               ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ JSON สำหรับสำรองข้อมูล นำเข้ากลับมาได้ภายหลัง — แนะนำสำรองเป็นระยะ นิยายของคุณสำคัญ
             </HelpPopover>
           </div>
@@ -242,7 +242,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
           <Button variant="secondary" className="flex-1" onClick={handleImportClick}>
             Import backup
           </Button>
-          <HelpPopover ariaLabel="Help: Import backup">
+          <HelpPopover side="right" ariaLabel="Help: Import backup">
             นำเข้าไฟล์ JSON ที่เคย Export backup ไว้ คำเตือน: จะเขียนทับข้อมูลปัจจุบันทั้งหมด — ควร Export backup ของเดิมก่อนทุกครั้ง
           </HelpPopover>
         </div>
