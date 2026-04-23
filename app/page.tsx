@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NovelProvider } from "@/lib/store";
 import { ReviewProvider } from "@/lib/review";
 import { ChapterSidebar } from "@/components/ChapterSidebar";
@@ -14,22 +14,23 @@ export default function Page() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [draftActive, setDraftActive] = useState(false);
-  const [showLanding, setShowLanding] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return !window.localStorage.getItem(SEEN_LANDING_KEY);
-  });
+  // null = not yet known. Server HTML and the first client render both see
+  // null, so they agree — no hydration mismatch. The effect below flips it.
+  const [showLanding, setShowLanding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setShowLanding(!window.localStorage.getItem(SEEN_LANDING_KEY));
+  }, []);
+
+  if (showLanding === null) return null;
 
   if (showLanding) {
-    const firstVisit =
-      typeof window !== "undefined" &&
-      !window.localStorage.getItem(SEEN_LANDING_KEY);
+    const firstVisit = !window.localStorage.getItem(SEEN_LANDING_KEY);
     return (
       <LandingPage
         returning={!firstVisit}
         onStart={() => {
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem(SEEN_LANDING_KEY, "1");
-          }
+          window.localStorage.setItem(SEEN_LANDING_KEY, "1");
           setShowLanding(false);
         }}
       />
