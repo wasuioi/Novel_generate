@@ -8,6 +8,7 @@ import {
   parseNovelJson,
 } from "@/lib/io";
 import { Button } from "./ui/Button";
+import { HelpPopover } from "./ui/HelpPopover";
 
 function today(): string {
   const d = new Date();
@@ -121,7 +122,18 @@ export function SettingsDrawer({ open, onClose }: Props) {
 
       <div className="p-4 space-y-4">
         <div>
-          <label className="block text-xs uppercase text-zinc-400 mb-1">Model</label>
+          <label className="block text-xs uppercase text-zinc-400 mb-1">
+            Model
+            <HelpPopover ariaLabel="Help: Model">
+              เลือก AI ที่จะใช้ Generate:
+              {"\n"}• Claude Sonnet 4.6 — สมดุลคุณภาพ/ความเร็ว/ค่าใช้จ่าย เหมาะกับงานประจำ
+              {"\n"}• Claude Opus 4.7 — คุณภาพสูงสุด เข้าใจบริบทซับซ้อน ช้า+แพงกว่า เหมาะกับตอนสำคัญ
+              {"\n"}• GPT-5.4 — สมดุลคุณภาพ/ความเร็ว เหมาะกับงานทั่วไป
+              {"\n"}• Gemini 3 Flash — เร็ว ประหยัด เหมาะกับทดลอง/ร่างไว ๆ
+              {"\n"}• Gemini 3.1 Pro — คุณภาพสูง รองรับ context ยาวมาก เหมาะกับนิยายที่บริบทเยอะ
+              {"\n\n"}คำแนะนำเป็นค่าเริ่มต้น — ลองเองแล้วเลือกที่ถูกใจที่สุด
+            </HelpPopover>
+          </label>
           <select
             value={novel.settings.model}
             onChange={(e) => update((n) => { n.settings.model = e.target.value; })}
@@ -134,6 +146,13 @@ export function SettingsDrawer({ open, onClose }: Props) {
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
             Temperature · {novel.settings.temperature.toFixed(1)}
+            <HelpPopover ariaLabel="Help: Temperature">
+              ควบคุมความหลากหลายของคำที่ AI เลือกใช้
+              {"\n"}• 0-0.5 (ต่ำ): คาดเดาได้ คำคุ้นเคย
+              {"\n"}• 0.6-0.9 (กลาง): สมดุล สร้างสรรค์+สอดคล้อง
+              {"\n"}• 1.0-1.5 (สูง): สร้างสรรค์ แปลกใหม่ แต่เสี่ยงหลุดเรื่อง
+              {"\n\n"}แนะนำเริ่มที่ 0.7-0.8
+            </HelpPopover>
           </label>
           <input
             type="range"
@@ -147,7 +166,12 @@ export function SettingsDrawer({ open, onClose }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs uppercase text-zinc-400 mb-1">Output language</label>
+          <label className="block text-xs uppercase text-zinc-400 mb-1">
+            Output language
+            <HelpPopover ariaLabel="Help: Output language">
+              ภาษาที่ AI จะใช้เขียน เปลี่ยนได้ตลอด ไม่จำเป็นต้องตรงกับภาษาที่ใช้ใน Story Context
+            </HelpPopover>
+          </label>
           <div className="flex gap-4 text-sm">
             <label className="flex items-center gap-2">
               <input
@@ -175,6 +199,9 @@ export function SettingsDrawer({ open, onClose }: Props) {
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
             Target chapter length · {novel.settings.targetWords} words
+            <HelpPopover ariaLabel="Help: Target chapter length">
+              ความยาวโดยประมาณของแต่ละตอน (คำ) AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
+            </HelpPopover>
           </label>
           <input
             type="range"
@@ -194,16 +221,31 @@ export function SettingsDrawer({ open, onClose }: Props) {
 
       <div className="absolute bottom-0 inset-x-0 p-4 border-t border-zinc-800 space-y-2">
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="secondary" onClick={handleExportMd}>
-            Export as .md
-          </Button>
-          <Button variant="secondary" onClick={handleExportJson}>
-            Export backup
-          </Button>
+          <div className="flex items-center">
+            <Button variant="secondary" onClick={handleExportMd} className="flex-1">
+              Export as .md
+            </Button>
+            <HelpPopover ariaLabel="Help: Export as .md">
+              ดาวน์โหลดเนื้อหานิยาย (Story Context + ทุกตอน) เป็นไฟล์ Markdown อ่านได้ในโปรแกรมทั่วไป (Obsidian, VSCode, Notion) เหมาะกับการส่งออกไปใช้ที่อื่น
+            </HelpPopover>
+          </div>
+          <div className="flex items-center">
+            <Button variant="secondary" onClick={handleExportJson} className="flex-1">
+              Export backup
+            </Button>
+            <HelpPopover ariaLabel="Help: Export backup">
+              ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ JSON สำหรับสำรองข้อมูล นำเข้ากลับมาได้ภายหลัง — แนะนำสำรองเป็นระยะ นิยายของคุณสำคัญ
+            </HelpPopover>
+          </div>
         </div>
-        <Button variant="secondary" className="w-full" onClick={handleImportClick}>
-          Import backup
-        </Button>
+        <div className="flex items-center">
+          <Button variant="secondary" className="flex-1" onClick={handleImportClick}>
+            Import backup
+          </Button>
+          <HelpPopover ariaLabel="Help: Import backup">
+            นำเข้าไฟล์ JSON ที่เคย Export backup ไว้ คำเตือน: จะเขียนทับข้อมูลปัจจุบันทั้งหมด — ควร Export backup ของเดิมก่อนทุกครั้ง
+          </HelpPopover>
+        </div>
         {importError && (
           <p className="text-xs text-red-400" aria-live="polite">
             {importError}
