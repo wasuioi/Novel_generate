@@ -37,6 +37,7 @@ function renderSidebar(
       draftActive={false}
       onStartDraft={noop}
       onOpenSettings={noop}
+      onOpenHelp={noop}
       {...overrides}
     />,
     { wrapper },
@@ -122,5 +123,26 @@ describe("ChapterSidebar draft edit row", () => {
     ) as HTMLButtonElement;
     draftEditButton.click();
     expect(calls).toEqual([null]);
+  });
+});
+
+describe("ChapterSidebar Help button", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("renders a Help button", async () => {
+    renderSidebar();
+    expect(
+      await screen.findByRole("button", { name: /help/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("calls onOpenHelp when the Help button is clicked", async () => {
+    let called = 0;
+    renderSidebar({ onOpenHelp: () => { called++; } });
+    const helpBtn = await screen.findByRole("button", { name: /help/i });
+    helpBtn.click();
+    expect(called).toBe(1);
   });
 });

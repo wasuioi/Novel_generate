@@ -10,13 +10,14 @@ type Props = {
   draftActive: boolean;
   onStartDraft: () => void;
   onOpenSettings: () => void;
+  onOpenHelp: () => void;
 };
 
 function preview(text: string) {
   return text.split("\n").slice(0, 2).join(" ").slice(0, 80);
 }
 
-export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, onOpenSettings }: Props) {
+export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, onOpenSettings, onOpenHelp }: Props) {
   const { novel, update } = useNovel();
   const { reviewing } = useReview();
   const { chapters, draft } = novel;
@@ -114,6 +115,7 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
         >
           + New chapter
         </Button>
+        <Button variant="ghost" className="w-full" onClick={onOpenHelp}>? Help</Button>
         <Button variant="ghost" className="w-full" onClick={onOpenSettings}>⚙ Settings</Button>
       </div>
     </aside>
