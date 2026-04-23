@@ -63,7 +63,7 @@ export const DEFAULT_NOVEL: Novel = {
   chapters: [],
   draft: { chapterId: null, title: "", prompt: "", output: "" },
   settings: {
-    model: "anthropic/claude-sonnet-4.6",
+    model: "google/gemini-3-flash-preview",
     temperature: 0.8,
     targetWords: 1800,
     outputLanguage: "en",

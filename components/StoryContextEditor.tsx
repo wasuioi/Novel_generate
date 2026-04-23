@@ -4,6 +4,7 @@ import { useNovel } from "@/lib/store";
 import { useReview } from "@/lib/review";
 import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
+import { HelpPopover } from "./ui/HelpPopover";
 
 function wordCount(s: string) {
   return s.trim() ? s.trim().split(/\s+/).length : 0;
@@ -44,6 +45,9 @@ export function StoryContextEditor() {
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
           Story Context
+          <HelpPopover ariaLabel="Help: Story Context">
+            บริบทของนิยายที่ AI จะใช้อ้างอิงในทุก Generate — ตัวละคร โลก พล็อต สไตล์การเขียน ยิ่งละเอียด AI ยิ่งช่วยได้ตรงแนว
+          </HelpPopover>
         </h2>
         <span className="text-xs text-zinc-500">{wordCount(novel.storyContext)} words</span>
       </div>
