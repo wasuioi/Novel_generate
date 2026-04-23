@@ -225,7 +225,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
             <Button variant="secondary" onClick={handleExportMd} className="flex-1">
               Export as .md
             </Button>
-            <HelpPopover side="right" ariaLabel="Help: Export as .md">
+            <HelpPopover side="right" placement="top" ariaLabel="Help: Export as .md">
               ดาวน์โหลดเนื้อหานิยาย (Story Context + ทุกตอน) เป็นไฟล์ Markdown อ่านได้ในโปรแกรมทั่วไป (Obsidian, VSCode, Notion) เหมาะกับการส่งออกไปใช้ที่อื่น
             </HelpPopover>
           </div>
@@ -233,7 +233,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
             <Button variant="secondary" onClick={handleExportJson} className="flex-1">
               Export backup
             </Button>
-            <HelpPopover side="right" ariaLabel="Help: Export backup">
+            <HelpPopover side="right" placement="top" ariaLabel="Help: Export backup">
               ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ JSON สำหรับสำรองข้อมูล นำเข้ากลับมาได้ภายหลัง — แนะนำสำรองเป็นระยะ นิยายของคุณสำคัญ
             </HelpPopover>
           </div>
@@ -242,7 +242,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
           <Button variant="secondary" className="flex-1" onClick={handleImportClick}>
             Import backup
           </Button>
-          <HelpPopover side="right" ariaLabel="Help: Import backup">
+          <HelpPopover side="right" placement="top" ariaLabel="Help: Import backup">
             นำเข้าไฟล์ JSON ที่เคย Export backup ไว้ คำเตือน: จะเขียนทับข้อมูลปัจจุบันทั้งหมด — ควร Export backup ของเดิมก่อนทุกครั้ง
           </HelpPopover>
         </div>

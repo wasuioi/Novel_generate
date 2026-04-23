@@ -69,6 +69,7 @@ export function LandingPage({ onStart, returning = false }: Props) {
             <li>เปลี่ยน <strong>ภาษา</strong> ที่ AI ใช้เขียน</li>
             <li>ตั้ง <strong>ความยาวตอน</strong> เป้าหมาย</li>
             <li><strong>Export / Import</strong> ข้อมูลนิยาย</li>
+            <li><strong>Start New Novel</strong> — ล้างข้อมูลทั้งหมด เริ่มนิยายใหม่ (ควร Export backup ก่อนเสมอ)</li>
           </ul>
           <p className="text-xs text-zinc-400 pt-1">
             แต่ละช่องมีไอคอน <strong>?</strong> อธิบายเพิ่มเติม กดดูได้ในหน้า Settings

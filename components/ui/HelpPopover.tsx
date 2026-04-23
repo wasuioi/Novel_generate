@@ -8,9 +8,17 @@ type Props = {
   // rightward; use "right" in narrow containers (e.g. Settings drawer) so
   // the panel stays within the container instead of overflowing.
   side?: "left" | "right";
+  // "bottom" (default) opens the panel below the trigger; "top" opens above
+  // — useful when the trigger sits near the bottom of the viewport.
+  placement?: "bottom" | "top";
 };
 
-export function HelpPopover({ children, ariaLabel = "Help", side = "left" }: Props) {
+export function HelpPopover({
+  children,
+  ariaLabel = "Help",
+  side = "left",
+  placement = "bottom",
+}: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
 
@@ -47,7 +55,7 @@ export function HelpPopover({ children, ariaLabel = "Help", side = "left" }: Pro
       {open && (
         <span
           role="tooltip"
-          className={`absolute ${side === "right" ? "right-0" : "left-0"} top-full mt-1 w-72 rounded border border-zinc-700 bg-zinc-800 p-3 text-xs text-zinc-200 shadow-lg z-30 whitespace-pre-line`}
+          className={`absolute ${side === "right" ? "right-0" : "left-0"} ${placement === "top" ? "bottom-full mb-1" : "top-full mt-1"} w-72 rounded border border-zinc-700 bg-zinc-800 p-3 text-xs text-zinc-200 shadow-lg z-30 whitespace-pre-line`}
         >
           {children}
         </span>
