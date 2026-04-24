@@ -9,4 +9,4 @@ export const TOKENS_PER_WORD: Record<"en" | "th", number> = {
   en: 2,
   th: 7,
 };
-export const MAX_OUTPUT_TOKENS = 16000;
+export const MAX_OUTPUT_TOKENS = 28000;

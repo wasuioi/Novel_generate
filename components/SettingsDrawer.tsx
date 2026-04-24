@@ -206,7 +206,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
           <input
             type="range"
             min={500}
-            max={3000}
+            max={4000}
             step={100}
             value={novel.settings.targetWords}
             onChange={(e) => update((n) => { n.settings.targetWords = parseInt(e.target.value, 10); })}
