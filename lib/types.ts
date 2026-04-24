@@ -1,5 +1,5 @@
 export type AgentCall = {
-  agent: "writer" | "summarizer" | "loreKeeper";
+  agent: "writer" | "summarizer" | "loreKeeper" | "sceneSuggester";
   model: string;
   promptTokens: number;
   completionTokens: number;
@@ -36,12 +36,18 @@ export type Settings = {
   outputLanguage: "en" | "th";
 };
 
+export type SceneSuggestion = {
+  title: string;
+  synopsis: string;
+};
+
 export type Draft = {
   chapterId: string | null;
   title: string;
   prompt: string;
   output: string;
   writerCost?: AgentCall | null;
+  sceneSuggesterCost?: AgentCall | null;
 };
 
 export type Novel = {

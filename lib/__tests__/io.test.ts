@@ -120,6 +120,21 @@ describe("parseNovelJson errors", () => {
     if (r.ok) expect(r.novel.chapters).toEqual([]);
   });
 
+  it("accepts an old-shape Draft (missing sceneSuggesterCost)", () => {
+    const old = {
+      storyContext: "",
+      lore: [],
+      chapters: [],
+      draft: { chapterId: null, title: "", prompt: "", output: "" },
+      settings: { model: "x", temperature: 0.5, targetWords: 1200, outputLanguage: "en" },
+    };
+    const result = parseNovelJson(JSON.stringify(old));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.novel.draft.sceneSuggesterCost ?? null).toBe(null);
+    }
+  });
+
   it("rejects wrapped backup with an unsupported version", () => {
     const r = parseNovelJson('{"version": 2, "novel": {}}');
     expect(r.ok).toBe(false);

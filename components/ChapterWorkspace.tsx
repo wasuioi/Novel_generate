@@ -13,11 +13,13 @@ import {
 } from "@/lib/agents/config";
 import { COST_DELIMITER_HEADER, extractWriterCost } from "@/lib/agents/streamMeta";
 import { buildChapterCost } from "@/lib/agents/prices";
-import type { AgentCall } from "@/lib/types";
+import type { AgentCall, SceneSuggestion } from "@/lib/types";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
 import { PromptPreviewModal } from "./PromptPreviewModal";
+import { SceneSuggestModal } from "./SceneSuggestModal";
+import { buildSceneSuggestMessages } from "@/lib/agents/sceneSuggester";
 import { HelpPopover } from "./ui/HelpPopover";
 
 type Props = {
@@ -55,6 +57,13 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const abortRef = useRef<AbortController | null>(null);
   const summaryAbortRef = useRef<AbortController | null>(null);
   const loreAbortRef = useRef<AbortController | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<SceneSuggestion[]>([]);
+  const suggestAbortRef = useRef<AbortController | null>(null);
+
+  const INTRO_SEEN_KEY = "sceneSuggest.introSeen";
 
   const viewedChapter = viewingId ? novel.chapters.find((c) => c.id === viewingId) : undefined;
   const isEditingExisting = Boolean(draft.chapterId);
@@ -66,6 +75,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
   const canGenerate =
     !streaming && !reviewing && Boolean(novel.storyContext.trim() || draft.prompt.trim());
+
+  const canSuggest =
+    !streaming &&
+    !reviewing &&
+    !isEditingExisting &&
+    (novel.storyContext.trim().length > 0 || novel.chapters.length > 0);
 
   const generate = async () => {
     if (draft.output.trim()) {
@@ -130,6 +145,60 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   };
 
   const stop = () => abortRef.current?.abort();
+
+  const runSuggest = async () => {
+    suggestAbortRef.current?.abort();
+    const controller = new AbortController();
+    suggestAbortRef.current = controller;
+    setSuggestLoading(true);
+    setSuggestError(null);
+    setSuggestions([]);
+    try {
+      const res = await fetch("/api/suggest-scenes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: settings.model,
+          temperature: settings.temperature,
+          messages: buildSceneSuggestMessages(novel),
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setSuggestError(`${res.status} · ${text}`);
+        return;
+      }
+      const json = (await res.json()) as {
+        suggestions: SceneSuggestion[];
+        cost: AgentCall | null;
+      };
+      setSuggestions(json.suggestions);
+      if (json.cost) {
+        update((n) => { n.draft.sceneSuggesterCost = json.cost; });
+      }
+    } catch (err) {
+      if ((err as { name?: string }).name === "AbortError") return;
+      setSuggestError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSuggestLoading(false);
+    }
+  };
+
+  const onSuggestClick = () => {
+    const seen =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(INTRO_SEEN_KEY) === "1";
+    if (!seen) {
+      const ok = window.confirm(
+        "ฟีเจอร์ขอไอเดีย: AI จะเสนอไอเดีย 3 แบบสำหรับตอนต่อไป โดยดูจากเนื้อเรื่องและ lore ที่คุณมี เลือกหนึ่งได้ (หรือไม่เลือกก็ได้) ใช้ครั้งละประมาณ $0.0005 (ราคาตามโมเดลที่คุณตั้ง) ใช้เลยไหม?"
+      );
+      if (!ok) return;
+      window.localStorage.setItem(INTRO_SEEN_KEY, "1");
+    }
+    setSuggestOpen(true);
+    void runSuggest();
+  };
 
   const startSummarize = (chapterTitle: string, chapterContent: string) => {
     summaryAbortRef.current?.abort();
@@ -238,6 +307,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     const stagedPrompt = reviewState.stagedPrompt;
     const stagedContent = reviewState.stagedContent;
     const writerCost = novel.draft.writerCost ?? null;
+    const sceneSuggesterCost = novel.draft.sceneSuggesterCost ?? null;
     const summarizerCost = reviewState.summarizerCost;
     const loreKeeperCost = reviewState.loreKeeperCost;
 
@@ -258,11 +328,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
             writerCost ?? findOldCost("writer"),
             summarizerCost ?? findOldCost("summarizer"),
             loreKeeperCost ?? findOldCost("loreKeeper"),
+            sceneSuggesterCost ?? findOldCost("sceneSuggester"),
           ]);
           existing.cost = merged ?? existing.cost;
         }
       } else {
-        const chapterCost = buildChapterCost([writerCost, summarizerCost, loreKeeperCost]);
+        const chapterCost = buildChapterCost([writerCost, summarizerCost, loreKeeperCost, sceneSuggesterCost]);
         const newId = crypto.randomUUID();
         n.chapters.push({
           id: newId,
@@ -284,7 +355,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           });
         }
       }
-      n.draft = { chapterId: null, title: "", prompt: "", output: "", writerCost: null };
+      n.draft = { chapterId: null, title: "", prompt: "", output: "", writerCost: null, sceneSuggesterCost: null };
     });
   };
 
@@ -335,7 +406,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const discard = () => {
     if (!window.confirm("Discard this draft?")) return;
     update((n) => {
-      n.draft = { chapterId: null, title: "", prompt: "", output: "", writerCost: null };
+      n.draft = { chapterId: null, title: "", prompt: "", output: "", writerCost: null, sceneSuggesterCost: null };
     });
     onEndDraft();
   };
@@ -380,6 +451,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         prompt: viewedChapter.prompt,
         output: viewedChapter.content,
         writerCost: null,
+        sceneSuggesterCost: null,
       };
     });
     onClearView();
@@ -478,6 +550,14 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           ) : (
             <>
               <Button
+                variant="secondary"
+                onClick={onSuggestClick}
+                disabled={!canSuggest}
+                title={canSuggest ? "" : "ต้องมี Story Context หรือมีตอนอื่นอยู่แล้วก่อน / ใช้ไม่ได้ตอนแก้ตอนเก่าหรือกำลังสร้าง"}
+              >
+                💡 ขอไอเดีย
+              </Button>
+              <Button
                 onClick={generate}
                 disabled={!canGenerate}
                 title={canGenerate ? "" : "Write some guidance first"}
@@ -553,6 +633,26 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         messages={previewMessages}
+      />
+
+      <SceneSuggestModal
+        open={suggestOpen}
+        loading={suggestLoading}
+        error={suggestError}
+        suggestions={suggestions}
+        warnOverwrite={draft.title.trim().length > 0 || draft.prompt.trim().length > 0}
+        onConfirm={(picked) => {
+          update((n) => {
+            n.draft.title = picked.title;
+            n.draft.prompt = picked.synopsis;
+          });
+          setSuggestOpen(false);
+        }}
+        onRegenerate={() => { void runSuggest(); }}
+        onClose={() => {
+          suggestAbortRef.current?.abort();
+          setSuggestOpen(false);
+        }}
       />
     </section>
   );

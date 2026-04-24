@@ -13,3 +13,12 @@ html, body {
 .font-serif {
   font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
 }
+
+@keyframes card-select-bounce {
+  0%   { transform: translateY(0) scale(1); }
+  60%  { transform: translateY(-12px) scale(1.02); }
+  100% { transform: translateY(-4px) scale(1); }
+}
+.card-selected {
+  animation: card-select-bounce 220ms ease-out forwards;
+}
