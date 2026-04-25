@@ -40,8 +40,8 @@ describe("sanitizeNovel", () => {
   it("merges partial settings with defaults", () => {
     const result = sanitizeNovel({ settings: { temperature: 0.2 } });
     expect(result.settings.temperature).toBe(0.2);
-    expect(result.settings.targetWords).toBe(DEFAULT_NOVEL.settings.targetWords);
-    expect(result.settings.outputLanguage).toBe(DEFAULT_NOVEL.settings.outputLanguage);
+    expect(result.settings.targetChars).toBe(DEFAULT_NOVEL.settings.targetChars);
+    expect(result.settings.model).toBe(DEFAULT_NOVEL.settings.model);
   });
 
   it("backfills missing chapter.summary with empty string", () => {
@@ -126,7 +126,7 @@ describe("parseNovelJson errors", () => {
       lore: [],
       chapters: [],
       draft: { chapterId: null, title: "", prompt: "", output: "" },
-      settings: { model: "x", temperature: 0.5, targetWords: 1200, outputLanguage: "en" },
+      settings: { model: "x", temperature: 0.5, targetChars: 6000 },
     };
     const result = parseNovelJson(JSON.stringify(old));
     expect(result.ok).toBe(true);
@@ -139,6 +139,39 @@ describe("parseNovelJson errors", () => {
     const r = parseNovelJson('{"version": 2, "novel": {}}');
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/version/i);
+  });
+});
+
+describe("settings migration from legacy targetWords", () => {
+  it("migrates targetWords to targetChars using factor 4.5", () => {
+    const result = sanitizeNovel({
+      settings: { model: "m", temperature: 0.7, targetWords: 1800, outputLanguage: "en" },
+    });
+    expect(result.settings.targetChars).toBe(8100); // 1800 * 4.5
+    expect((result.settings as Record<string, unknown>).targetWords).toBeUndefined();
+    expect((result.settings as Record<string, unknown>).outputLanguage).toBeUndefined();
+  });
+
+  it("rounds the migration factor", () => {
+    const result = sanitizeNovel({ settings: { targetWords: 2200 } });
+    expect(result.settings.targetChars).toBe(9900); // 2200 * 4.5
+  });
+
+  it("clamps low values up to 3000", () => {
+    const result = sanitizeNovel({ settings: { targetWords: 500 } });
+    expect(result.settings.targetChars).toBe(3000); // round(2250) clamped
+  });
+
+  it("clamps high values down to 12000", () => {
+    const result = sanitizeNovel({ settings: { targetWords: 4000 } });
+    expect(result.settings.targetChars).toBe(12000); // round(18000) clamped
+  });
+
+  it("prefers existing targetChars over legacy targetWords if both present", () => {
+    const result = sanitizeNovel({
+      settings: { targetChars: 7000, targetWords: 1800 },
+    });
+    expect(result.settings.targetChars).toBe(7000);
   });
 });
 

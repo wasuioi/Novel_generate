@@ -1,11 +1,9 @@
 import type { Message } from "../types";
 
-const LANGUAGE_DIRECTIVE: Record<"en" | "th", string> = {
-  en: "CRITICAL: You MUST write every fact in English. Do not use any other language.",
-  th: "CRITICAL: You MUST write every fact in Thai (ภาษาไทย). Do not use English or any other language. Character names and proper nouns may stay as-is.",
-};
+const LANGUAGE_DIRECTIVE =
+  "CRITICAL: You MUST write every fact in Thai (ภาษาไทย). Do not use English or any other language. Character names and proper nouns may stay as-is.";
 
-function buildSystem(existingLore: string[], outputLanguage: "en" | "th"): string {
+function buildSystem(existingLore: string[]): string {
   const loreList =
     existingLore.length > 0
       ? existingLore.map((l) => `- ${l}`).join("\n")
@@ -22,7 +20,7 @@ function buildSystem(existingLore: string[], outputLanguage: "en" | "th"): strin
     "Output format: one fact per line starting with \"- \".",
     "If nothing new, output exactly \"NONE\". Do not add any extra commentary.",
     "",
-    LANGUAGE_DIRECTIVE[outputLanguage],
+    LANGUAGE_DIRECTIVE,
   ].join("\n");
 }
 
@@ -30,10 +28,9 @@ export function buildLoreKeeperMessages(
   chapterTitle: string,
   chapterContent: string,
   existingLore: string[],
-  outputLanguage: "en" | "th",
 ): Message[] {
   return [
-    { role: "system", content: buildSystem(existingLore, outputLanguage) },
+    { role: "system", content: buildSystem(existingLore) },
     { role: "user", content: `${chapterTitle}\n\n${chapterContent}` },
   ];
 }

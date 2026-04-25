@@ -64,8 +64,21 @@ describe("useNovel", () => {
     const { result } = renderHook(() => useNovel(), { wrapper });
     expect(result.current.novel.lore).toEqual([]);
     expect(result.current.novel.chapters[0].summary).toBe("");
-    expect(result.current.novel.settings.targetWords).toBe(1800);
-    expect(result.current.novel.settings.outputLanguage).toBe("en");
+    expect(result.current.novel.settings.targetChars).toBe(6000); // DEFAULT
+  });
+
+  it("migrates legacy stored state with targetWords + outputLanguage", () => {
+    const legacy = {
+      storyContext: "",
+      chapters: [],
+      draft: { chapterId: null, title: "", prompt: "", output: "" },
+      settings: { model: "x", temperature: 0.7, targetWords: 2200, outputLanguage: "en" },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    const { result } = renderHook(() => useNovel(), { wrapper });
+    expect(result.current.novel.settings.targetChars).toBe(9900); // 2200 * 4.5
+    expect((result.current.novel.settings as Record<string, unknown>).targetWords).toBeUndefined();
+    expect((result.current.novel.settings as Record<string, unknown>).outputLanguage).toBeUndefined();
   });
 
   it("replace() swaps state and persists immediately", () => {

@@ -22,26 +22,18 @@ describe("buildMessages", () => {
     expect(msgs[1].content).toContain("Introduce the hero.");
   });
 
-  it("injects the target word count and a 'do NOT stop short' instruction", () => {
+  it("includes target length, sweet-spot range, and a 'do not pad' instruction", () => {
     const novel = base();
-    novel.settings.targetWords = 1200;
+    novel.settings.targetChars = 6000;
     const msgs = buildMessages(novel);
-    expect(msgs[1].content).toContain("approximately 1200 words");
-    expect(msgs[1].content).toContain("at least 960 words"); // floor(1200 * 0.8)
-    expect(msgs[1].content).toContain("do NOT stop short");
+    expect(msgs[1].content).toContain("approximately 6000 Thai characters");
+    expect(msgs[1].content).toContain("sweet spot 5400–6600"); // 90%, 110%
+    expect(msgs[1].content).toContain("do not pad with filler");
     expect(msgs[1].content).toContain("beginning, middle, and end");
   });
 
-  it("includes the English directive when outputLanguage is en (and no Thai)", () => {
+  it("always includes the Thai-language directive", () => {
     const msgs = buildMessages(base());
-    expect(msgs[0].content).toContain("write the story entirely in English");
-    expect(msgs[0].content).not.toContain("ภาษาบรรยาย");
-  });
-
-  it("includes the Thai block when outputLanguage is th", () => {
-    const novel = base();
-    novel.settings.outputLanguage = "th";
-    const msgs = buildMessages(novel);
     expect(msgs[0].content).toContain("write the story entirely in Thai language");
     expect(msgs[0].content).toContain("ภาษาบรรยายแบบนิยาย");
     expect(msgs[0].content).not.toContain("write the story entirely in English");

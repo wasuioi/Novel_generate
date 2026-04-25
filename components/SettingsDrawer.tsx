@@ -167,49 +167,22 @@ export function SettingsDrawer({ open, onClose }: Props) {
 
         <div>
           <label className="block text-xs uppercase text-zinc-400 mb-1">
-            Output language
-            <HelpPopover side="right" ariaLabel="Help: Output language">
-              ภาษาที่ AI จะใช้เขียน เปลี่ยนได้ตลอด ไม่จำเป็นต้องตรงกับภาษาที่ใช้ใน Story Context
-            </HelpPopover>
-          </label>
-          <div className="flex gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="outputLanguage"
-                value="en"
-                checked={novel.settings.outputLanguage === "en"}
-                onChange={() => update((n) => { n.settings.outputLanguage = "en"; })}
-              />
-              English
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="outputLanguage"
-                value="th"
-                checked={novel.settings.outputLanguage === "th"}
-                onChange={() => update((n) => { n.settings.outputLanguage = "th"; })}
-              />
-              ไทย
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase text-zinc-400 mb-1">
-            Target chapter length · {novel.settings.targetWords} words
+            Target chapter length · {novel.settings.targetChars} characters
             <HelpPopover side="right" ariaLabel="Help: Target chapter length">
-              ความยาวโดยประมาณของแต่ละตอน (คำ) AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
+              ความยาวโดยประมาณของแต่ละตอน นับเป็นตัวอักษรรวมช่องว่าง (เกณฑ์ที่ ธัญวลัย / readAwrite / Fictionlog ใช้)
+              {"\n\n"}• ตอนสั้น 3,000–5,000
+              {"\n"}• ตอนกลาง 5,000–8,000
+              {"\n"}• ตอนยาว 8,000–12,000
+              {"\n\n"}AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
             </HelpPopover>
           </label>
           <input
             type="range"
-            min={500}
-            max={4000}
-            step={100}
-            value={novel.settings.targetWords}
-            onChange={(e) => update((n) => { n.settings.targetWords = parseInt(e.target.value, 10); })}
+            min={3000}
+            max={12000}
+            step={500}
+            value={novel.settings.targetChars}
+            onChange={(e) => update((n) => { n.settings.targetChars = parseInt(e.target.value, 10); })}
             className="w-full"
           />
         </div>

@@ -32,8 +32,7 @@ export type LoreItem = {
 export type Settings = {
   model: string;
   temperature: number;
-  targetWords: number;
-  outputLanguage: "en" | "th";
+  targetChars: number;
 };
 
 export type SceneSuggestion = {
@@ -71,7 +70,6 @@ export const DEFAULT_NOVEL: Novel = {
   settings: {
     model: "google/gemini-3-flash-preview",
     temperature: 0.8,
-    targetWords: 1800,
-    outputLanguage: "en",
+    targetChars: 6000,
   },
 };

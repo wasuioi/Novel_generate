@@ -10,7 +10,6 @@ export const runtime = "nodejs";
 const Body = z.object({
   chapterTitle: z.string().min(1).max(500),
   chapterContent: z.string().min(1).max(200000),
-  outputLanguage: z.enum(["en", "th"]),
 });
 
 export async function POST(req: Request) {
@@ -37,7 +36,6 @@ export async function POST(req: Request) {
       messages: buildSummarizerMessages(
         parsed.data.chapterTitle,
         parsed.data.chapterContent,
-        parsed.data.outputLanguage,
       ),
     });
     const cost = buildAgentCall(

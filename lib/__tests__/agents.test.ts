@@ -4,7 +4,7 @@ import { buildLoreKeeperMessages, parseLoreKeeperOutput } from "../agents/loreKe
 
 describe("buildSummarizerMessages", () => {
   it("returns a system + user message with the chapter title and content", () => {
-    const msgs = buildSummarizerMessages("Chapter 1 · Arrival", "The hero stepped off the boat.", "en");
+    const msgs = buildSummarizerMessages("Chapter 1 · Arrival", "The hero stepped off the boat.");
     expect(msgs).toHaveLength(2);
     expect(msgs[0].role).toBe("system");
     expect(msgs[0].content).toContain("precise story summarizer");
@@ -14,15 +14,10 @@ describe("buildSummarizerMessages", () => {
     expect(msgs[1].content).toContain("The hero stepped off the boat.");
   });
 
-  it("includes a Thai language directive when outputLanguage is th", () => {
-    const msgs = buildSummarizerMessages("T", "C", "th");
+  it("always includes the Thai language directive", () => {
+    const msgs = buildSummarizerMessages("T", "C");
     expect(msgs[0].content).toContain("MUST write every bullet in Thai");
     expect(msgs[0].content).toContain("ภาษาไทย");
-  });
-
-  it("includes an English language directive when outputLanguage is en", () => {
-    const msgs = buildSummarizerMessages("T", "C", "en");
-    expect(msgs[0].content).toContain("MUST write every bullet in English");
   });
 });
 
@@ -56,7 +51,6 @@ describe("buildLoreKeeperMessages", () => {
       "Chapter 2 · The Sword",
       "Aria pulled a silver dagger from the cloak.",
       ["Aria is the protagonist.", "The forest is haunted."],
-      "en",
     );
     expect(msgs[0].role).toBe("system");
     expect(msgs[0].content).toContain("Aria is the protagonist.");
@@ -67,19 +61,14 @@ describe("buildLoreKeeperMessages", () => {
   });
 
   it("handles empty existing lore gracefully", () => {
-    const msgs = buildLoreKeeperMessages("T", "C", [], "en");
+    const msgs = buildLoreKeeperMessages("T", "C", []);
     expect(msgs[0].content).toContain("Existing lore (do not duplicate):");
   });
 
-  it("includes a Thai language directive when outputLanguage is th", () => {
-    const msgs = buildLoreKeeperMessages("T", "C", [], "th");
+  it("always includes the Thai language directive", () => {
+    const msgs = buildLoreKeeperMessages("T", "C", []);
     expect(msgs[0].content).toContain("MUST write every fact in Thai");
     expect(msgs[0].content).toContain("ภาษาไทย");
-  });
-
-  it("includes an English language directive when outputLanguage is en", () => {
-    const msgs = buildLoreKeeperMessages("T", "C", [], "en");
-    expect(msgs[0].content).toContain("MUST write every fact in English");
   });
 });
 

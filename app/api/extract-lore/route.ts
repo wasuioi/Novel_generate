@@ -11,7 +11,6 @@ const Body = z.object({
   chapterTitle: z.string().min(1).max(500),
   chapterContent: z.string().min(1).max(200000),
   existingLore: z.array(z.string().max(1000)).max(500),
-  outputLanguage: z.enum(["en", "th"]),
 });
 
 export async function POST(req: Request) {
@@ -39,7 +38,6 @@ export async function POST(req: Request) {
         parsed.data.chapterTitle,
         parsed.data.chapterContent,
         parsed.data.existingLore,
-        parsed.data.outputLanguage,
       ),
     });
     const cost = buildAgentCall(
