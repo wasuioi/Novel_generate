@@ -42,14 +42,15 @@ DEFAULT_NOVEL.settings = {
 
 Inline migration when loading old data (localStorage hydration **and** JSON import):
 
-- If `settings.targetWords` exists → `targetChars = clamp(targetWords * 4, 3000, 12000)`, then drop `targetWords`.
-  - 1800 (old default) → 7200 (mid "ตอนกลาง")
-  - 500 → 3000 (clamp floor)
-  - 4000 (old max) → 12000 (clamp ceiling)
+- If `settings.targetWords` exists → `targetChars = clamp(round(targetWords * 4.5), 3000, 12000)`, then drop `targetWords`.
+  - 1800 (old default) → 8,100 (matches owner's measured ~7,800)
+  - 2200 → 9,900 (matches owner's measured ~10,000)
+  - 500 → 3,000 (clamp floor)
+  - 4000 (old max) → 12,000 (clamp ceiling)
 - If `settings.outputLanguage` exists → drop it (everyone is Thai).
 - Chapter content untouched.
 
-The factor 4 is a rough average for Thai prose: a "word" from `split(/\s+/)` is typically a multi-character phrase. Empirically chosen to land owner's prior 1800-default setting in the middle of the new "ตอนกลาง" range.
+The factor 4.5 comes from the owner measuring two existing chapters: 1800 words ≈ 7,800 chars and 2,200 words ≈ 10,000 chars (Word's *Characters with spaces* on actual generated Thai prose). A "word" via `split(/\s+/)` in Thai is really a phrase, hence the high ratio.
 
 ### Settings UI (`components/SettingsDrawer.tsx`)
 
