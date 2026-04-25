@@ -6,8 +6,8 @@ import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
 import { HelpPopover } from "./ui/HelpPopover";
 
-function wordCount(s: string) {
-  return s.trim() ? s.trim().split(/\s+/).length : 0;
+function charCount(s: string) {
+  return s.length;
 }
 
 export function StoryContextEditor() {
@@ -49,7 +49,7 @@ export function StoryContextEditor() {
             บริบทของนิยายที่ AI จะใช้อ้างอิงในทุก Generate — ตัวละคร โลก พล็อต สไตล์การเขียน ยิ่งละเอียด AI ยิ่งช่วยได้ตรงแนว
           </HelpPopover>
         </h2>
-        <span className="text-xs text-zinc-500">{wordCount(novel.storyContext)} words</span>
+        <span className="text-xs text-zinc-500">{charCount(novel.storyContext)} characters</span>
       </div>
       <Textarea
         value={novel.storyContext}

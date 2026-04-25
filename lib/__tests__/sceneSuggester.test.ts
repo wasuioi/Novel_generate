@@ -60,22 +60,13 @@ describe("parseSceneSuggestions", () => {
 });
 
 describe("buildSceneSuggestMessages", () => {
-  it("includes the story context and language instruction (th)", () => {
+  it("includes the story context and the Thai language instruction", () => {
     const novel = structuredClone(DEFAULT_NOVEL);
     novel.storyContext = "A fantasy kingdom at war.";
-    novel.settings.outputLanguage = "th";
     const messages = buildSceneSuggestMessages(novel);
     const system = messages.find((m) => m.role === "system")!.content;
     expect(system).toContain("A fantasy kingdom at war.");
     expect(system).toContain("ภาษาไทย");
     expect(system).toContain("JSON array of 3 objects");
-  });
-
-  it("switches language instruction for en", () => {
-    const novel = structuredClone(DEFAULT_NOVEL);
-    novel.settings.outputLanguage = "en";
-    const messages = buildSceneSuggestMessages(novel);
-    const system = messages.find((m) => m.role === "system")!.content;
-    expect(system).toContain("natural English");
   });
 });

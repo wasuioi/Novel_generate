@@ -8,12 +8,6 @@ const THAI_BLOCK = [
   "Ensure the dialogue sounds like real human conversation in Thai.",
 ].join("\n");
 
-const ENGLISH_BLOCK = [
-  "You MUST write the story entirely in English.",
-  "Even if the user's guidance, story context, or established lore contains other languages,",
-  "the prose must be in natural, literary English. Translate proper nouns or terms when needed for clarity.",
-].join("\n");
-
 export function buildContextBlocks(novel: Novel): string[] {
   const editIndex = novel.draft.chapterId
     ? novel.chapters.findIndex((c) => c.id === novel.draft.chapterId)
@@ -71,20 +65,20 @@ export function buildMessages(novel: Novel): Message[] {
   const isEditing = editIndex >= 0;
 
   const sections: string[] = ["You are an expert novel writer."];
-  sections.push(novel.settings.outputLanguage === "th" ? THAI_BLOCK : ENGLISH_BLOCK);
+  sections.push(THAI_BLOCK);
   sections.push(...buildContextBlocks(novel));
   const system = sections.join("\n\n");
 
-  const targetWords = novel.settings.targetWords;
-  const minWords = Math.floor(targetWords * 0.8);
+  const targetChars = novel.settings.targetChars;
+  const minChars = Math.floor(targetChars * 0.9);
+  const maxChars = Math.floor(targetChars * 1.1);
   const openingLine = isEditing
-    ? `Rewrite chapter ${editIndex + 1}. Target length: approximately ${targetWords} words.`
-    : `Write the next chapter. Target length: approximately ${targetWords} words.`;
+    ? `Rewrite chapter ${editIndex + 1}. Target length: approximately ${targetChars} Thai characters including spaces (sweet spot ${minChars}–${maxChars}).`
+    : `Write the next chapter. Target length: approximately ${targetChars} Thai characters including spaces (sweet spot ${minChars}–${maxChars}).`;
   const user = [
     openingLine,
-    `Develop the scene fully — do NOT stop short. Continue writing until you have covered the entire arc described in the guidance and reached at least ${minWords} words.`,
-    "Do not pad with filler, but ensure the chapter has a proper beginning, middle, and end.",
-    "Finish the final sentence completely before stopping. Keep pacing tight.",
+    `Develop the scene fully so it covers the entire arc described in the guidance. Once the arc completes, finish the sentence and stop — do not pad with filler.`,
+    "Ensure the chapter has a proper beginning, middle, and end. Keep pacing tight.",
     "",
     `Guidance: ${novel.draft.prompt}`,
   ].join("\n");

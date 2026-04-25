@@ -7,17 +7,14 @@ const BASE = [
   "starting with \"- \". Do not include introductory phrases like \"Here is the summary\".",
 ].join(" ");
 
-const LANGUAGE_DIRECTIVE: Record<"en" | "th", string> = {
-  en: "CRITICAL: You MUST write every bullet in English. Do not use any other language.",
-  th: "CRITICAL: You MUST write every bullet in Thai (ภาษาไทย). Do not use English or any other language. Character names and proper nouns may stay as-is.",
-};
+const LANGUAGE_DIRECTIVE =
+  "CRITICAL: You MUST write every bullet in Thai (ภาษาไทย). Do not use English or any other language. Character names and proper nouns may stay as-is.";
 
 export function buildSummarizerMessages(
   chapterTitle: string,
   chapterContent: string,
-  outputLanguage: "en" | "th",
 ): Message[] {
-  const system = `${BASE}\n\n${LANGUAGE_DIRECTIVE[outputLanguage]}`;
+  const system = `${BASE}\n\n${LANGUAGE_DIRECTIVE}`;
   return [
     { role: "system", content: system },
     { role: "user", content: `${chapterTitle}\n\n${chapterContent}` },

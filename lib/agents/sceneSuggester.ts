@@ -48,7 +48,6 @@ export function parseSceneSuggestions(raw: string): ParseResult {
 }
 
 const THAI_LANG = "Write the title AND synopsis in natural Thai (ภาษาไทย).";
-const ENGLISH_LANG = "Write the title AND synopsis in natural English.";
 
 const INSTRUCTIONS = [
   "You are a scene-idea brainstormer for a novel in progress.",
@@ -69,8 +68,7 @@ const INSTRUCTIONS = [
 ].join("\n");
 
 export function buildSceneSuggestMessages(novel: Novel): Message[] {
-  const langLine = novel.settings.outputLanguage === "th" ? THAI_LANG : ENGLISH_LANG;
-  const system = [INSTRUCTIONS, "", langLine, "", ...buildContextBlocks(novel)].join("\n\n");
+  const system = [INSTRUCTIONS, "", THAI_LANG, "", ...buildContextBlocks(novel)].join("\n\n");
   const user = "Propose 3 distinct directions for the next chapter as JSON.";
   return [
     { role: "system", content: system },

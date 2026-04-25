@@ -13,6 +13,19 @@ function unwrap(obj: Record<string, unknown>): Record<string, unknown> {
   return obj;
 }
 
+function migrateSettings(raw: Record<string, unknown>): Partial<Novel["settings"]> {
+  const out: Partial<Novel["settings"]> = {};
+  if (typeof raw.model === "string") out.model = raw.model;
+  if (typeof raw.temperature === "number") out.temperature = raw.temperature;
+  if (typeof raw.targetChars === "number") {
+    out.targetChars = raw.targetChars;
+  } else if (typeof raw.targetWords === "number") {
+    const migrated = Math.round(raw.targetWords * 4.5);
+    out.targetChars = Math.max(3000, Math.min(12000, migrated));
+  }
+  return out;
+}
+
 export function sanitizeNovel(raw: unknown): Novel {
   if (!isPlainObject(raw)) return DEFAULT_NOVEL;
   const parsed = unwrap(raw);
@@ -25,7 +38,7 @@ export function sanitizeNovel(raw: unknown): Novel {
     chapters,
     lore: Array.isArray(parsed.lore) ? (parsed.lore as Novel["lore"]) : DEFAULT_NOVEL.lore,
     settings: isPlainObject(parsed.settings)
-      ? { ...DEFAULT_NOVEL.settings, ...(parsed.settings as Partial<Novel["settings"]>) }
+      ? { ...DEFAULT_NOVEL.settings, ...migrateSettings(parsed.settings) }
       : DEFAULT_NOVEL.settings,
     draft: isPlainObject(parsed.draft)
       ? { ...DEFAULT_NOVEL.draft, ...(parsed.draft as Partial<Novel["draft"]>) }

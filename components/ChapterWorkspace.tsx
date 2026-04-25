@@ -9,7 +9,6 @@ import { parseLoreKeeperOutput } from "@/lib/agents/loreKeeper";
 import {
   AGENT_TIMEOUT_MS,
   MAX_OUTPUT_TOKENS,
-  TOKENS_PER_WORD,
 } from "@/lib/agents/config";
 import { COST_DELIMITER_HEADER, extractWriterCost } from "@/lib/agents/streamMeta";
 import { buildChapterCost } from "@/lib/agents/prices";
@@ -108,10 +107,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         body: JSON.stringify({
           model: settings.model,
           temperature: settings.temperature,
-          maxTokens: Math.min(
-            Math.floor(settings.targetWords * TOKENS_PER_WORD[settings.outputLanguage]),
-            MAX_OUTPUT_TOKENS,
-          ),
+          maxTokens: Math.min(settings.targetChars * 2, MAX_OUTPUT_TOKENS),
           messages: buildMessages(novel),
         }),
         signal: controller.signal,
@@ -212,7 +208,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
     callAgent(
       "/api/summarize",
-      { chapterTitle, chapterContent, outputLanguage: settings.outputLanguage },
+      { chapterTitle, chapterContent },
       controller.signal,
     )
       .then(({ text, cost }) => {
@@ -250,7 +246,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
 
     callAgent(
       "/api/extract-lore",
-      { chapterTitle, chapterContent, existingLore, outputLanguage: settings.outputLanguage },
+      { chapterTitle, chapterContent, existingLore },
       controller.signal,
     )
       .then(({ text, cost }) => {
