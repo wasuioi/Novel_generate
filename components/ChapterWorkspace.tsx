@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNovel } from "@/lib/store";
 import { useReview, type LoreCandidate } from "@/lib/review";
 import { buildMessages } from "@/lib/prompt";
@@ -61,6 +61,15 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<SceneSuggestion[]>([]);
   const suggestAbortRef = useRef<AbortController | null>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to the review panel when it opens, so the user sees that
+  // clicking "บันทึกตอน" did something (the panel renders below the fold).
+  useEffect(() => {
+    if (reviewing) {
+      reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [reviewing]);
 
   const INTRO_SEEN_KEY = "sceneSuggest.introSeen";
 
@@ -371,15 +380,6 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
     onEndDraft();
   };
 
-  const onSkip = () => {
-    if (reviewState.kind !== "active") return;
-    if (!confirmMissingSummary()) return;
-    abortAgents();
-    commitChapter(reviewState.summary, []);
-    setReview({ kind: "idle" });
-    onEndDraft();
-  };
-
   const onCancel = () => {
     abortAgents();
     setReview({ kind: "idle" });
@@ -595,7 +595,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         />
         <div className="flex gap-2">
           <Button onClick={send} disabled={!draft.output.trim() || streaming || reviewing}>
-            Send to Chapter History
+            บันทึกตอน
           </Button>
           <Button
             variant="secondary"
@@ -615,14 +615,15 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       {viewedChapter ? viewerSection : editorSection}
 
       {reviewing && (
-        <ReviewPanel
-          isEditing={isEditingExisting}
-          onApprove={onApprove}
-          onSkip={onSkip}
-          onCancel={onCancel}
-          onRetrySummary={onRetrySummary}
-          onRetryLore={onRetryLore}
-        />
+        <div ref={reviewRef}>
+          <ReviewPanel
+            isEditing={isEditingExisting}
+            onApprove={onApprove}
+            onCancel={onCancel}
+            onRetrySummary={onRetrySummary}
+            onRetryLore={onRetryLore}
+          />
+        </div>
       )}
 
       <PromptPreviewModal
