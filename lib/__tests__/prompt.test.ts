@@ -32,10 +32,10 @@ describe("buildMessages", () => {
     expect(msgs[1].content).toContain("beginning, middle, and end");
   });
 
-  it("always includes the Thai-language directive", () => {
+  it("always includes the Thai-language directive and clarity guidance", () => {
     const msgs = buildMessages(base());
     expect(msgs[0].content).toContain("write the story entirely in Thai language");
-    expect(msgs[0].content).toContain("ภาษาบรรยายแบบนิยาย");
+    expect(msgs[0].content).toContain("clear, modern, accessible Thai prose");
     expect(msgs[0].content).not.toContain("write the story entirely in English");
   });
 

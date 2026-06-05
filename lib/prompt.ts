@@ -3,9 +3,10 @@ import { SLIDING_WINDOW_FULL_COUNT } from "./agents/config";
 
 const THAI_BLOCK = [
   "You MUST write the story entirely in Thai language.",
-  "Use highly natural, elegant, and literary Thai prose (ภาษาบรรยายแบบนิยาย).",
-  "Avoid robotic translations or unnatural phrasing.",
-  "Ensure the dialogue sounds like real human conversation in Thai.",
+  "Write clear, modern, accessible Thai prose — like contemporary novels, not classical literature (วรรณคดี). Use short, direct sentences and choose the simpler word: \"มอง\" not \"ทัศนา\", \"เดิน\" not \"ดำเนิน\".",
+  "Do NOT personify nature, time, silence, light, or sound. Avoid patterns like \"ลมหายใจของโลก\", \"ความเงียบที่จดจำได้\", \"แสงที่กระซิบ\" — describe things literally and physically.",
+  "Dialogue should sound like how Thai people actually talk today, not formal or วรรณคดี.",
+  "The user's chapter Guidance overrides these defaults whenever they conflict.",
 ].join("\n");
 
 export function buildContextBlocks(novel: Novel): string[] {
