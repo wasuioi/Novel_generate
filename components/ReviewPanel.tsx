@@ -6,13 +6,12 @@ import { Textarea } from "./ui/Textarea";
 type Props = {
   isEditing: boolean;
   onApprove: () => void;
-  onSkip: () => void;
   onCancel: () => void;
   onRetrySummary: () => void;
   onRetryLore: () => void;
 };
 
-export function ReviewPanel({ isEditing, onApprove, onSkip, onCancel, onRetrySummary, onRetryLore }: Props) {
+export function ReviewPanel({ isEditing, onApprove, onCancel, onRetrySummary, onRetryLore }: Props) {
   const { state, setState } = useReview();
   if (state.kind !== "active") return null;
 
@@ -41,25 +40,31 @@ export function ReviewPanel({ isEditing, onApprove, onSkip, onCancel, onRetrySum
 
   return (
     <section className="border border-amber-700 bg-amber-950/30 rounded p-4 space-y-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-300">
-        {isEditing ? "Review updated chapter" : "Review chapter before saving"}
-      </h2>
+      <div className="space-y-1">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-300">
+          {isEditing ? "ตรวจตอนที่แก้ไข" : "ตรวจก่อนบันทึกตอน"}
+        </h2>
+        <p className="text-xs text-zinc-400">
+          AI ช่วยสรุปตอนนี้ และจดข้อมูลสำคัญไว้ ให้ตอนต่อ ๆ ไปเขียนได้ต่อเนื่อง — ตรวจแล้วกดยืนยันได้เลย
+        </p>
+      </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs uppercase text-zinc-400">Summary</label>
+          <label className="text-xs uppercase text-zinc-400">สรุปตอนนี้</label>
           {state.summaryStatus === "loading" && (
-            <span className="text-xs text-zinc-500">Summarizing…</span>
+            <span className="text-xs text-zinc-500">กำลังสรุป…</span>
           )}
           {state.summaryStatus === "error" && (
             <button onClick={onRetrySummary} className="text-xs text-amber-400 underline">
-              Retry summary
+              ลองสรุปใหม่
             </button>
           )}
         </div>
+        <p className="text-xs text-zinc-500">ความจำย่อ ๆ ของตอนนี้ ใช้ตอนเขียนตอนถัดไป (แก้ได้)</p>
         {state.summaryStatus === "error" ? (
           <p className="text-xs text-red-300">
-            Summarizer failed — you can still save without a summary.
+            สรุปไม่สำเร็จ — บันทึกได้โดยไม่มีสรุป
           </p>
         ) : (
           <Textarea
@@ -74,22 +79,25 @@ export function ReviewPanel({ isEditing, onApprove, onSkip, onCancel, onRetrySum
       {!isEditing && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs uppercase text-zinc-400">New lore</label>
+            <label className="text-xs uppercase text-zinc-400">ข้อมูลใหม่</label>
             {state.loreStatus === "loading" && (
-              <span className="text-xs text-zinc-500">Extracting…</span>
+              <span className="text-xs text-zinc-500">กำลังดึงข้อมูล…</span>
             )}
             {state.loreStatus === "error" && (
               <button onClick={onRetryLore} className="text-xs text-amber-400 underline">
-                Retry lore
+                ลองดึงใหม่
               </button>
             )}
           </div>
+          <p className="text-xs text-zinc-500">
+            AI ดึงข้อมูลสำคัญจากตอนนี้ (ชื่อตัวละคร สถานที่ ปมเรื่อง) · ติ๊ก = ให้ AI จำไว้ใช้ตอนต่อไป / เอาติ๊กออก = ไม่เก็บ
+          </p>
           {state.loreStatus === "error" ? (
             <p className="text-xs text-red-300">
-              Lore extraction failed — chapter will save without new lore.
+              ดึงข้อมูลไม่สำเร็จ — จะบันทึกตอนโดยไม่เพิ่มข้อมูลใหม่
             </p>
           ) : state.loreCandidates.length === 0 && state.loreStatus === "ready" ? (
-            <p className="text-xs text-zinc-500 italic">No new lore extracted.</p>
+            <p className="text-xs text-zinc-500 italic">ไม่มีข้อมูลใหม่จากตอนนี้</p>
           ) : (
             <ul className="space-y-1">
               {state.loreCandidates.map((c, i) => (
@@ -114,15 +122,10 @@ export function ReviewPanel({ isEditing, onApprove, onSkip, onCancel, onRetrySum
 
       <div className="flex gap-2 pt-2 border-t border-amber-800">
         <Button onClick={onApprove} disabled={!bothDone}>
-          {isEditing ? "Save chapter & summary" : "Approve & save"}
+          {isEditing ? "บันทึกการแก้ไข" : "ยืนยันบันทึก"}
         </Button>
-        {!isEditing && (
-          <Button variant="secondary" onClick={onSkip} disabled={!bothDone}>
-            Skip review & save chapter only
-          </Button>
-        )}
         <button onClick={onCancel} className="text-xs text-zinc-400 underline ml-auto">
-          Cancel
+          ยกเลิก
         </button>
       </div>
     </section>

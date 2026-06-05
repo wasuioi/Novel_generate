@@ -116,7 +116,7 @@ export function ChapterSidebar({ viewingId, onView, draftActive, onStartDraft, o
           + New chapter
         </Button>
         <Button variant="ghost" className="w-full" onClick={onOpenHelp}>? Help</Button>
-        <Button variant="ghost" className="w-full" onClick={onOpenSettings}>⚙ Settings</Button>
+        <Button variant="ghost" className="w-full" onClick={onOpenSettings}>⚙ ตั้งค่า</Button>
       </div>
     </aside>
   );

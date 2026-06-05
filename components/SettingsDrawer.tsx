@@ -81,7 +81,7 @@ export function SettingsDrawer({ open, onClose }: Props) {
 
   const onReset = () => {
     const ok = window.confirm(
-      "This deletes your story context, all saved chapters, and the current draft. This cannot be undone. Continue?",
+      "คุณยืนยันที่จะลบเนื้อหาทั้งหมดไหม? ข้อมูลจะหายถาวร กู้คืนไม่ได้",
     );
     if (ok) {
       reset();
@@ -231,8 +231,8 @@ export function SettingsDrawer({ open, onClose }: Props) {
           onChange={handleFileSelected}
           className="hidden"
         />
-        <Button variant="danger" className="w-full" onClick={onReset}>
-          Start New Novel (Clear All Data)
+        <Button variant="danger" onClick={onReset} title="ลบเนื้อหาทั้งหมด เริ่มนิยายเรื่องใหม่">
+          🗑 ลบทั้งหมด
         </Button>
       </div>
     </div>
