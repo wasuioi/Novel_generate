@@ -9,6 +9,7 @@ import {
 } from "@/lib/io";
 import { Button } from "./ui/Button";
 import { HelpPopover } from "./ui/HelpPopover";
+import { MODEL_SLUGS } from "@/lib/models";
 
 function today(): string {
   const d = new Date();
@@ -26,14 +27,6 @@ function triggerDownload(filename: string, content: string, mime: string) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-const MODEL_OPTIONS = [
-  "anthropic/claude-sonnet-4.6",
-  "anthropic/claude-opus-4.7",
-  "openai/gpt-5.4",
-  "google/gemini-3-flash-preview",
-  "google/gemini-3.1-pro-preview",
-] as const;
-
 type Props = { open: boolean; onClose: () => void };
 
 export function SettingsDrawer({ open, onClose }: Props) {
@@ -42,8 +35,8 @@ export function SettingsDrawer({ open, onClose }: Props) {
 
   // Migrate stale stored model slugs (from earlier app versions) to a current one.
   useEffect(() => {
-    if (!(MODEL_OPTIONS as readonly string[]).includes(novel.settings.model)) {
-      update((n) => { n.settings.model = MODEL_OPTIONS[0]; });
+    if (!MODEL_SLUGS.includes(novel.settings.model)) {
+      update((n) => { n.settings.model = MODEL_SLUGS[0]; });
     }
   }, [novel.settings.model, update]);
 
@@ -116,77 +109,14 @@ export function SettingsDrawer({ open, onClose }: Props) {
       aria-hidden={!open}
     >
       <div className="p-4 flex items-center justify-between border-b border-zinc-800">
-        <h2 className="font-semibold">Settings</h2>
+        <h2 className="font-semibold">ตั้งค่า</h2>
         <Button variant="ghost" onClick={onClose} aria-label="Close settings">✕</Button>
       </div>
 
       <div className="p-4 space-y-4">
-        <div>
-          <label className="block text-xs uppercase text-zinc-400 mb-1">
-            Model
-            <HelpPopover side="right" ariaLabel="Help: Model">
-              เลือก AI ที่จะใช้ Generate:
-              {"\n"}• Claude Sonnet 4.6 — สมดุลคุณภาพ/ความเร็ว/ค่าใช้จ่าย เหมาะกับงานประจำ
-              {"\n"}• Claude Opus 4.7 — คุณภาพสูงสุด เข้าใจบริบทซับซ้อน ช้า+แพงกว่า เหมาะกับตอนสำคัญ
-              {"\n"}• GPT-5.4 — สมดุลคุณภาพ/ความเร็ว เหมาะกับงานทั่วไป
-              {"\n"}• Gemini 3 Flash — เร็ว ประหยัด เหมาะกับทดลอง/ร่างไว ๆ
-              {"\n"}• Gemini 3.1 Pro — คุณภาพสูง รองรับ context ยาวมาก เหมาะกับนิยายที่บริบทเยอะ
-              {"\n\n"}คำแนะนำเป็นค่าเริ่มต้น — ลองเองแล้วเลือกที่ถูกใจที่สุด
-            </HelpPopover>
-          </label>
-          <select
-            value={novel.settings.model}
-            onChange={(e) => update((n) => { n.settings.model = e.target.value; })}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-sm"
-          >
-            {MODEL_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase text-zinc-400 mb-1">
-            Temperature · {novel.settings.temperature.toFixed(1)}
-            <HelpPopover side="right" ariaLabel="Help: Temperature">
-              ควบคุมความหลากหลายของคำที่ AI เลือกใช้
-              {"\n"}• 0-0.5 (ต่ำ): คาดเดาได้ คำคุ้นเคย
-              {"\n"}• 0.6-0.9 (กลาง): สมดุล สร้างสรรค์+สอดคล้อง
-              {"\n"}• 1.0-1.5 (สูง): สร้างสรรค์ แปลกใหม่ แต่เสี่ยงหลุดเรื่อง
-              {"\n\n"}แนะนำเริ่มที่ 0.7-0.8
-            </HelpPopover>
-          </label>
-          <input
-            type="range"
-            min={0}
-            max={1.5}
-            step={0.1}
-            value={novel.settings.temperature}
-            onChange={(e) => update((n) => { n.settings.temperature = parseFloat(e.target.value); })}
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase text-zinc-400 mb-1">
-            Target chapter length · {novel.settings.targetChars} characters
-            <HelpPopover side="right" ariaLabel="Help: Target chapter length">
-              ความยาวโดยประมาณของแต่ละตอน นับเป็นตัวอักษรรวมช่องว่าง (เกณฑ์ที่ ธัญวลัย / readAwrite / Fictionlog ใช้)
-              {"\n\n"}• ตอนสั้น 3,000–5,000
-              {"\n"}• ตอนกลาง 5,000–8,000
-              {"\n"}• ตอนยาว 8,000–12,000
-              {"\n\n"}AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
-            </HelpPopover>
-          </label>
-          <input
-            type="range"
-            min={3000}
-            max={12000}
-            step={500}
-            value={novel.settings.targetChars}
-            onChange={(e) => update((n) => { n.settings.targetChars = parseInt(e.target.value, 10); })}
-            className="w-full"
-          />
-        </div>
-
+        <p className="text-xs text-zinc-400">
+          ตั้งค่าการเขียน (โมเดล · ความสร้างสรรค์ · ความยาว) ย้ายไปอยู่เหนือปุ่ม Generate แล้ว
+        </p>
         <p className="text-xs text-zinc-500">
           API key lives in <code>.env.local</code> on the server.
         </p>

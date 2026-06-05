@@ -16,6 +16,7 @@ import type { AgentCall, SceneSuggestion } from "@/lib/types";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { ReviewPanel } from "./ReviewPanel";
+import { GenerationControls } from "./GenerationControls";
 import { PromptPreviewModal } from "./PromptPreviewModal";
 import { SceneSuggestModal } from "./SceneSuggestModal";
 import { buildSceneSuggestMessages } from "@/lib/agents/sceneSuggester";
@@ -540,6 +541,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
           placeholder="What should happen in this chapter?"
           rows={4}
         />
+        <GenerationControls />
         <div className="flex gap-2">
           {streaming ? (
             <Button variant="danger" onClick={stop}>■ Stop generating</Button>
