@@ -1,5 +1,6 @@
 import type { Message, Novel } from "./types";
 import { SLIDING_WINDOW_FULL_COUNT } from "./agents/config";
+import { activeDetailPreset } from "./detailPresets";
 
 const THAI_BLOCK = [
   "You MUST write the story entirely in Thai language.",
@@ -8,6 +9,19 @@ const THAI_BLOCK = [
   "Dialogue should sound like how Thai people actually talk today, not formal or วรรณคดี.",
   "The user's chapter Guidance overrides these defaults whenever they conflict.",
 ].join("\n");
+
+// Per-level writing instruction, derived from the chosen detail preset. Makes
+// "กระชับ vs ละเอียด" actually change the prose density, not just a number.
+function detailInstruction(targetChars: number): string {
+  switch (activeDetailPreset(targetChars)) {
+    case "concise":
+      return "Detail level — concise: keep an efficient pace with essential description; do not rush or skip important moments.";
+    case "detailed":
+      return "Detail level — detailed: fully develop every beat with concrete sensory detail, the characters' inner thoughts and feelings, and complete dialogue; immerse the reader and build a long, richly developed chapter.";
+    default:
+      return "Detail level — balanced: develop the main beats with description, emotion, and dialogue where they matter.";
+  }
+}
 
 export function buildContextBlocks(novel: Novel): string[] {
   const editIndex = novel.draft.chapterId
@@ -78,8 +92,9 @@ export function buildMessages(novel: Novel): Message[] {
     : `Write the next chapter. Target length: approximately ${targetChars} Thai characters including spaces (sweet spot ${minChars}–${maxChars}).`;
   const user = [
     openingLine,
+    detailInstruction(targetChars),
     `Develop the scene fully so it covers the entire arc described in the guidance. Once the arc completes, finish the sentence and stop — do not pad with filler.`,
-    "Ensure the chapter has a proper beginning, middle, and end. Keep pacing tight.",
+    "Ensure the chapter has a proper beginning, middle, and end.",
     "",
     `Guidance: ${novel.draft.prompt}`,
   ].join("\n");

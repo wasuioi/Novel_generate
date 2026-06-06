@@ -3,6 +3,7 @@ import { useNovel } from "@/lib/store";
 import { HelpPopover } from "./ui/HelpPopover";
 import { MODEL_OPTIONS } from "@/lib/models";
 import { TEMP_PRESETS, activeTempPreset } from "@/lib/tempPresets";
+import { DETAIL_PRESETS, activeDetailPreset } from "@/lib/detailPresets";
 
 // Generation settings surfaced above the Generate button (model, creativity,
 // length) so the user can see and change them every time — instead of hidden
@@ -11,6 +12,7 @@ export function GenerationControls() {
   const { novel, update } = useNovel();
   const { settings } = novel;
   const activePreset = activeTempPreset(settings.temperature);
+  const activeDetail = activeDetailPreset(settings.targetChars);
 
   return (
     <div className="border border-zinc-800 rounded p-3 space-y-3 bg-zinc-900/40">
@@ -68,24 +70,32 @@ export function GenerationControls() {
 
       <div>
         <label className="block text-xs uppercase text-zinc-400 mb-1">
-          ความยาว · {settings.targetChars} ตัวอักษร
-          <HelpPopover side="right" ariaLabel="Help: ความยาว">
-            ความยาวโดยประมาณของแต่ละตอน นับเป็นตัวอักษรรวมช่องว่าง
-            {"\n\n"}• ตอนสั้น 3,000–5,000
-            {"\n"}• ตอนกลาง 5,000–8,000
-            {"\n"}• ตอนยาว 8,000–12,000
-            {"\n\n"}AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
+          ระดับรายละเอียด
+          <HelpPopover side="right" ariaLabel="Help: ระดับรายละเอียด">
+            AI จะเล่าละเอียดแค่ไหน — ไม่ใช่การันตีความยาว
+            {"\n"}(ความยาวจริง = ระดับนี้ × จำนวนเหตุการณ์ที่คุณใส่ในช่อง Chapter prompt)
+            {"\n\n"}• กระชับ — เล่าเร็ว ตรงประเด็น
+            {"\n"}• สมดุล — กำลังดี (แนะนำ)
+            {"\n"}• ละเอียด — บรรยายเยอะ ลงลึก
           </HelpPopover>
         </label>
-        <input
-          type="range"
-          min={3000}
-          max={12000}
-          step={500}
-          value={settings.targetChars}
-          onChange={(e) => update((n) => { n.settings.targetChars = parseInt(e.target.value, 10); })}
-          className="w-full"
-        />
+        <div className="flex gap-1">
+          {DETAIL_PRESETS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              aria-pressed={activeDetail === p.key}
+              onClick={() => update((n) => { n.settings.targetChars = p.value; })}
+              className={`flex-1 text-xs rounded px-2 py-1.5 border transition-colors ${
+                activeDetail === p.key
+                  ? "bg-emerald-600 border-emerald-500 text-white"
+                  : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
