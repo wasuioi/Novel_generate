@@ -7,13 +7,13 @@ export type DetailPreset = { key: string; label: string; value: number };
 export const DETAIL_PRESETS: DetailPreset[] = [
   { key: "concise", label: "กระชับ", value: 4000 },
   { key: "balanced", label: "สมดุล", value: 6000 },
-  { key: "detailed", label: "ละเอียด", value: 12000 },
+  { key: "detailed", label: "ละเอียด", value: 14000 },
 ];
 
 // Which preset is "active" for a stored targetChars (nearest by range), so
 // legacy/custom values still light up a button. Boundaries are midpoints.
 export function activeDetailPreset(targetChars: number): string {
   if (targetChars <= 5000) return "concise";
-  if (targetChars <= 9000) return "balanced";
+  if (targetChars <= 10000) return "balanced";
   return "detailed";
 }
