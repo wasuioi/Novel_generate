@@ -52,6 +52,7 @@ export function GenerationControls() {
             <button
               key={p.key}
               type="button"
+              aria-pressed={activePreset === p.key}
               onClick={() => update((n) => { n.settings.temperature = p.value; })}
               className={`flex-1 text-xs rounded px-2 py-1.5 border transition-colors ${
                 activePreset === p.key
@@ -67,7 +68,7 @@ export function GenerationControls() {
 
       <div>
         <label className="block text-xs uppercase text-zinc-400 mb-1">
-          ความยาว · {settings.targetChars.toLocaleString()} ตัวอักษร
+          ความยาว · {settings.targetChars} ตัวอักษร
           <HelpPopover side="right" ariaLabel="Help: ความยาว">
             ความยาวโดยประมาณของแต่ละตอน นับเป็นตัวอักษรรวมช่องว่าง
             {"\n\n"}• ตอนสั้น 3,000–5,000
