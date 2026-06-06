@@ -162,9 +162,9 @@ describe("settings migration from legacy targetWords", () => {
     expect(result.settings.targetChars).toBe(3000); // round(2250) clamped
   });
 
-  it("clamps high values down to 20000", () => {
-    const result = sanitizeNovel({ settings: { targetWords: 5000 } });
-    expect(result.settings.targetChars).toBe(20000); // round(22500) clamped
+  it("clamps high values down to 12000", () => {
+    const result = sanitizeNovel({ settings: { targetWords: 4000 } });
+    expect(result.settings.targetChars).toBe(12000); // round(18000) clamped
   });
 
   it("prefers existing targetChars over legacy targetWords if both present", () => {

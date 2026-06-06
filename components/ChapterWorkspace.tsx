@@ -589,7 +589,7 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       <div className="space-y-2 mt-6">
         <div className="flex items-baseline justify-between">
           <label className="text-xs uppercase text-zinc-400">Output (editable)</label>
-          <span className="text-xs text-zinc-500">{draft.output.length} / {settings.targetChars} ตัวอักษร</span>
+          <span className="text-xs text-zinc-500">{draft.output.length} ตัวอักษร</span>
         </div>
         <Textarea
           value={draft.output}

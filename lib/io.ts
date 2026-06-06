@@ -21,7 +21,7 @@ function migrateSettings(raw: Record<string, unknown>): Partial<Novel["settings"
     out.targetChars = raw.targetChars;
   } else if (typeof raw.targetWords === "number") {
     const migrated = Math.round(raw.targetWords * 4.5);
-    out.targetChars = Math.max(3000, Math.min(20000, migrated));
+    out.targetChars = Math.max(3000, Math.min(12000, migrated));
   }
   return out;
 }
