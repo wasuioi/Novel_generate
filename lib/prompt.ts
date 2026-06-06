@@ -15,7 +15,7 @@ const THAI_BLOCK = [
 function detailInstruction(targetChars: number): string {
   switch (activeDetailPreset(targetChars)) {
     case "concise":
-      return "Detail level — concise: move briskly through the events with only essential description.";
+      return "Detail level — concise: keep an efficient pace with essential description; do not rush or skip important moments.";
     case "detailed":
       return "Detail level — detailed: fully develop every beat with concrete sensory detail, the characters' inner thoughts and feelings, and complete dialogue; immerse the reader and build a long, richly developed chapter.";
     default:
