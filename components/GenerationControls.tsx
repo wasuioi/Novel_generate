@@ -74,13 +74,14 @@ export function GenerationControls() {
             {"\n\n"}• ตอนสั้น 3,000–5,000
             {"\n"}• ตอนกลาง 5,000–8,000
             {"\n"}• ตอนยาว 8,000–12,000
+            {"\n"}• ยาวมาก 12,000–20,000 (ช้า+แพงขึ้น)
             {"\n\n"}AI จะพยายามทำตาม แต่ไม่ตรงเป๊ะเสมอไป
           </HelpPopover>
         </label>
         <input
           type="range"
           min={3000}
-          max={12000}
+          max={20000}
           step={500}
           value={settings.targetChars}
           onChange={(e) => update((n) => { n.settings.targetChars = parseInt(e.target.value, 10); })}
