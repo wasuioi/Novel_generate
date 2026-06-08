@@ -10,7 +10,7 @@ import {
   AGENT_TIMEOUT_MS,
   MAX_OUTPUT_TOKENS,
 } from "@/lib/agents/config";
-import { COST_DELIMITER_HEADER, extractWriterCost } from "@/lib/agents/streamMeta";
+import { COST_DELIMITER_HEADER, extractWriterMeta } from "@/lib/agents/streamMeta";
 import { buildChapterCost } from "@/lib/agents/prices";
 import type { AgentCall, SceneSuggestion } from "@/lib/types";
 import { Button } from "./ui/Button";
@@ -45,6 +45,23 @@ async function callAgent(
   if (!res.ok) throw new Error(`${url} returned ${res.status}`);
   const json = (await res.json()) as AgentResponse;
   return { text: json.text ?? "", cost: json.cost ?? null };
+}
+
+// A finish reason other than "stop" means the model did not complete the
+// chapter on its own — surface why, so the user isn't left with a silently
+// truncated draft.
+function truncationMessage(finishReason: string, error: string | null): string {
+  const base = "⚠️ การสร้างถูกตัดกลางคัน — เนื้อหาที่ได้อาจยังไม่จบ";
+  switch (finishReason) {
+    case "length":
+      return `${base} (ถึงลิมิตความยาว) — ลองลด "ระดับรายละเอียด" หรือแบ่งเป็นหลายตอน`;
+    case "content-filter":
+      return `${base} (ตัวกรองเนื้อหาของโมเดล) — ลองปรับเนื้อหา หรือเปลี่ยนโมเดล`;
+    case "error":
+      return `${base}${error ? ` (${error})` : ""} — ลองกด Generate ใหม่ หรือเปลี่ยนโมเดล`;
+    default:
+      return `${base} (อาจเน็ตหลุดหรือโมเดลมีปัญหา) — ลองกด Generate ใหม่ หรือเปลี่ยนโมเดล`;
+  }
 }
 
 export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDraft }: Props) {
@@ -137,9 +154,12 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
         },
         controller.signal,
       );
-      const writerCost = extractWriterCost(received, delimiter);
-      if (writerCost) {
-        update((n) => { n.draft.writerCost = writerCost; });
+      const meta = extractWriterMeta(received, delimiter);
+      if (meta?.cost) {
+        update((n) => { n.draft.writerCost = meta.cost; });
+      }
+      if (meta && meta.finishReason && meta.finishReason !== "stop") {
+        setError(truncationMessage(meta.finishReason, meta.error));
       }
     } catch (e) {
       if ((e as Error).name === "AbortError") return;

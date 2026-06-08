@@ -37,12 +37,17 @@ export async function POST(req: Request) {
     apiKey,
   });
 
+  // Captured here (not thrown) because the AI SDK forwards stream errors to
+  // onError and ends the text stream gracefully. We surface it to the client
+  // via the trailing meta so a dropped stream isn't silently truncated.
+  let streamError: string | null = null;
   const result = streamText({
     model: openrouter(model),
     temperature,
     maxTokens,
     messages,
     onError: ({ error }) => {
+      streamError = error instanceof Error ? error.message : String(error);
       console.error("[/api/generate] streamText error:", error);
     },
   });
@@ -55,16 +60,20 @@ export async function POST(req: Request) {
         for await (const chunk of result.textStream) {
           controller.enqueue(encoder.encode(chunk));
         }
-        const usage = await result.usage;
+        const [usage, finishReason] = await Promise.all([
+          result.usage,
+          result.finishReason,
+        ]);
         const cost = buildAgentCall(
           "writer",
           model,
           usage.promptTokens,
           usage.completionTokens,
         );
-        if (cost) {
-          controller.enqueue(encoder.encode(`${nonce}${JSON.stringify(cost)}`));
-        }
+        // Always append meta — finishReason tells the client whether the model
+        // actually finished ("stop") or was cut (length/content-filter/error/…).
+        const meta = { cost, finishReason, error: streamError };
+        controller.enqueue(encoder.encode(`${nonce}${JSON.stringify(meta)}`));
       } catch (err) {
         console.error("[/api/generate] stream failure:", err);
         controller.error(err);
