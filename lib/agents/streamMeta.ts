@@ -13,7 +13,9 @@ export const COST_DELIMITER_HEADER = "x-cost-delimiter";
 export type WriterMeta = {
   cost: AgentCall | null;
   finishReason: string | null;
-  error: string | null;
+  // Whether the stream errored upstream — just a flag. The raw provider error
+  // is logged server-side only, never sent to the client (no detail leak).
+  errored: boolean;
 };
 
 export function extractWriterMeta(buffer: string, delimiter: string): WriterMeta | null {
@@ -25,7 +27,7 @@ export function extractWriterMeta(buffer: string, delimiter: string): WriterMeta
     return {
       cost: parsed.cost ?? null,
       finishReason: parsed.finishReason ?? null,
-      error: parsed.error ?? null,
+      errored: parsed.errored ?? false,
     };
   } catch {
     return null;

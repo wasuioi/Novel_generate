@@ -50,17 +50,15 @@ async function callAgent(
 // A finish reason other than "stop" means the model did not complete the
 // chapter on its own — surface why, so the user isn't left with a silently
 // truncated draft.
-function truncationMessage(finishReason: string, error: string | null): string {
+function truncationMessage(finishReason: string | null): string {
   const base = "⚠️ การสร้างถูกตัดกลางคัน — เนื้อหาที่ได้อาจยังไม่จบ";
   switch (finishReason) {
     case "length":
       return `${base} (ถึงลิมิตความยาว) — ลองลด "ระดับรายละเอียด" หรือแบ่งเป็นหลายตอน`;
     case "content-filter":
       return `${base} (ตัวกรองเนื้อหาของโมเดล) — ลองปรับเนื้อหา หรือเปลี่ยนโมเดล`;
-    case "error":
-      return `${base}${error ? ` (${error})` : ""} — ลองกด Generate ใหม่ หรือเปลี่ยนโมเดล`;
     default:
-      return `${base} (อาจเน็ตหลุดหรือโมเดลมีปัญหา) — ลองกด Generate ใหม่ หรือเปลี่ยนโมเดล`;
+      return `${base} — ลองกด Generate ใหม่ หรือเปลี่ยนโมเดล (อาจเน็ตหลุดหรือโมเดลมีปัญหา)`;
   }
 }
 
@@ -158,8 +156,8 @@ export function ChapterWorkspace({ viewingId, onClearView, draftActive, onEndDra
       if (meta?.cost) {
         update((n) => { n.draft.writerCost = meta.cost; });
       }
-      if (meta && meta.finishReason && meta.finishReason !== "stop") {
-        setError(truncationMessage(meta.finishReason, meta.error));
+      if (meta && (meta.errored || (meta.finishReason !== null && meta.finishReason !== "stop"))) {
+        setError(truncationMessage(meta.finishReason));
       }
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
